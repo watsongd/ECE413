@@ -1,3 +1,4 @@
+
 /*  Scoring for three songs
  *  Author: Matthew Watkins
  *
@@ -13,6 +14,8 @@
  *  End of song indicated by a 0 duration in *_dur1[]
  */
 
+//#include <stdint.h>
+//#include "notes.h"
 // Twinkle Twinkle
 uint16_t twinkle_base_dur = 500; //duration in ms for base note
 uint32_t twinkle_note1[] = {C4, C4, G4, G4, A4, A4, G4, F4, F4, E4, E4, D4, D4, C4, G4, G4, F4, F4, E4, E4, D4, G4, G4, F4, F4, E4, E4, D4,

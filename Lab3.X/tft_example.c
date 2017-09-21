@@ -15,6 +15,7 @@
 
 //Include Notes
 #include "notes.h"
+//#include "lab3_songs.c"
 
 #include "math.h"
 
@@ -51,6 +52,59 @@ int16_t sineTable[TABLE_SIZE] = {0,50,100,151,201,251,300,350,399,449,497,546,59
         -1614,-1582,-1550,-1517,-1483,-1447,-1411,-1375,-1337,-1299,-1259,-1219,
         -1179,-1137,-1095,-1052,-1009,-965,-920,-875,-830,-783,-737,-690,-642,-594,
         -546,-497,-449,-399,-350,-300,-251,-201,-151,-100,-50};
+
+uint16_t twinkle_base_dur = 500; //duration in ms for base note
+uint32_t twinkle_note1[] = {C4, C4, G4, G4, A4, A4, G4, F4, F4, E4, E4, D4, D4, C4, G4, G4, F4, F4, E4, E4, D4, G4, G4, F4, F4, E4, E4, D4,
+                            C4, C4, G4, G4, A4, A4, G4, F4, F4, E4, E4, D4, D4, C4};
+uint8_t twinkle_dur1[] = {1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 0};
+uint32_t twinkle_note2[] = {C3, E3, F3, E3, D3, C3, F3, G3, E3, C3, E3, F3, G3, G3, E3, F3, G3, G3, C3, E3, F3, E3, D3, C3, F3, G3, C3};
+uint8_t twinkle_dur2[] = {2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 0}; //0 ends song
+
+// Super Mario
+uint16_t mario_base_dur = 150; //150 //duration in ms for base note
+uint32_t mario_note1[] = {E5, E5, R, E5, R, C5, E5, R, G5, R, G4, R, C5, R, G4, R, E4, R, A4, R, B4, R, A4S, A4, R,
+                          G4, E5, G5, A5, R, F5, G5, R, E5, R, C5, D5, B4, R,
+                          C5, R, G4, R, E4, R, A4, R, B4, R, A4S, A4, R,
+                          G4, E5, G5, A5, R, F5, G5, R, E5, R, C5, D5, B4, R,
+                          R, G5, F5S, F5, D5S, R, E5, R, G4S, A4, C5, R, A4, C5, D5,
+                          R, G5, G5S, F5, D5S, R, E5, R, C6, R, C6, C6, R,
+                          R, G5, F5S, F5, D5S, R, E5, R, G4S, A4, C5, R, A4, C5, D5,
+                          R, D5S, R, D5, R, C5};
+uint8_t mario_dur1[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 3, 1, 2, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1,
+                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,1, 2, 
+                        1, 2, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1, 
+                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,1, 2,
+                        2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+                        2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 
+                        2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+                        2, 1, 2, 1, 2, 1, 0};
+uint32_t mario_note2[] = {F4S, F4S, R, F4S, R, F4S, F4S, R, B4, R, G3, R, E4, R, C4, R, G3, R, C4, R, D4, R, C4S, C4, R,
+                          C4, G4, B4, C5, R, A4, B4, R, A4, R, E4, F4, D4, R,
+                          E4, R, C4, R, G3, R, C4, R, D4, R, C4S, C4, R,
+                          C4, G4, B4, C5, R, A4, B4, R, A4, R, E4, F4, D4, R,
+                          C3, R, E5, D5S, D5, B4, C4, C5, F3, E4, F4, G4, C4, C4, E4, F4,
+                          C3, R, E5, D5S, D5, B4, G3, C5, R, F5, R, F5, F5, R, G3, R,
+                          C3, R, E5, D5S, D5, B4, C4, C5, F3, E4, F4, G4, C4, C4, E4, F4,
+                          C3, R, G4S, R, F4, R, E4};
+uint8_t mario_dur2[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 3, 1, 2, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1,
+                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,1, 2, 
+                        1, 2, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1, 
+                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,1, 2,
+                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
+                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+                        1, 1, 1, 2, 1, 2, 1, 0}; //0 ends song
+
+//Amazing Grace
+uint16_t amazing_base_dur = 270; //duration in ms for eighth note
+uint32_t amazing_note1[] = {D4, G4, B4, G4, B4, A4, G4, E4, D4, D4, G4, B4, G4, B4, A4, D5,
+                            B4, D5, B4, D5, B4, G4, D4, E4, G4, G4, E4, D4, D4, G4, B4, G4, B4, A4, G4};
+uint8_t amazing_dur1[] = { 2, 4, 1, 1, 4, 2, 4, 2, 4, 2, 4, 1, 1, 4, 2, 10, 
+                           2, 3, 1, 1, 1, 4, 2, 3, 1, 1, 1, 4, 2, 4, 1, 1, 4, 2, 10, 0};
+uint32_t amazing_note2[] = {B3, B3, D4, D4, C4, B3, C4, B3, B3, B3, D4, D4, D4, G3,
+                            D4, D4, D4, D4, D4, C4, D4, C4, B3, G3, B3, D4, D4, C4, G3};
+uint8_t amazing_dur2[] = { 2, 4, 2, 4, 2, 4, 2, 4, 2, 4, 2, 4, 2, 10, 
+                           2, 4, 2, 4, 2, 3, 1, 2, 4, 2, 4, 2, 4, 2, 10, 0}; //0 ends song
 
 int16_t triangleTable[TABLE_SIZE];
 
@@ -178,18 +232,25 @@ static PT_THREAD (protothread_keypad(struct pt *pt))
   PT_END(pt);
 } // keypad thread
 
+int i = 0;
+uint16_t base_dur;
+uint8_t  note_dur;
+uint32_t total_dur;
+uint32_t note;
 //Note Thread ===================================================
 static PT_THREAD (protothread_notes(struct pt *pt))
 {
     PT_BEGIN(pt);
         while(1) {
-
-            accum_amt = C4;
-            tft_fillCircle(40, 40, 20, ILI9341_BLACK);
-            PT_YIELD_TIME_msec(500);
-            accum_amt = G6;
-            tft_fillCircle(40, 40, 20, ILI9341_WHITE);
-            PT_YIELD_TIME_msec(500);
+            note = mario_note1[i];
+            note_dur = mario_dur1[i];
+            base_dur = mario_base_dur;
+            
+            total_dur = note_dur * base_dur;
+            accum_amt = note;
+            PT_YIELD_TIME_msec(total_dur);
+            i++;
+            
         // NEVER exit while
       } // END WHILE(1)
   PT_END(pt);
@@ -225,17 +286,11 @@ uint32_t accum = 0;
 void __ISR(_TIMER_1_VECTOR, ipl2) T1Int(void){
     //accum_amt = G4;
     accum += accum_amt;
-    //uint32_t f_int  = accum_amt & int_mask;
-    //uint32_t f_frac = accum_amt & frac_mask;
-
-    int16_t sine_val = 2048+sineTable[(accum>>24)&0xff];
-    //int32_t accum = 0x3000;
+    int16_t sine_valA = 2048+sineTable[(accum>>24)&0xff];
     
     
-    writeDAC(0x3000 | sine_val); // write to channel A, gain = 1
+    writeDAC(0x3000 | sine_valA); // write to channel A, gain = 1
     //writeDAC(0xB000 | triangleTable[counter]); // write to channel B, gain = 1
-    //counter += (f_int + f_frac);
-    //counter += 3;
     if (((accum>>24)&0xff) == TABLE_SIZE) accum = 0;
     LATAINV = 1;
     mT1ClearIntFlag();
