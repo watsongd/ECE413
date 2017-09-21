@@ -86,7 +86,7 @@ int sys_time_seconds ;
 static PT_THREAD (protothread_keypad(struct pt *pt))
 {
     PT_BEGIN(pt);
-    static int pad, i, pattern;
+    static int pad, i, pattern, press;
     // order is 0 thru 9 then * ==10 and # ==11
     // no press = -1
     // table is decoded to natural digit order (except for * and #)
@@ -110,8 +110,10 @@ static PT_THREAD (protothread_keypad(struct pt *pt))
         //mPORTAClearBits(BIT_0 | BIT_1 | BIT_2 | BIT_3);
         //pattern = 1; mPORTASetBits(pattern);
         for (i=0; i<4; i++) {
+            //if any of the buttons are pressed, pad goes high
             pad  = mPORTBReadBits(BIT_7 | BIT_8 | BIT_9);
-            if(pad!=0) {pad |= pattern ; break;}
+            //if a singular button has been pressed, pad != 0 
+            if(pad!=0) {pad |= pattern; break;}
             mPORTAClearBits(pattern);
             pattern <<= 1;
             mPORTASetBits(pattern);
@@ -124,15 +126,52 @@ static PT_THREAD (protothread_keypad(struct pt *pt))
             }
         }
         else i = -1; // no button pushed
+        
+        //define press as a button is pressed
+        if (i != -1) {
+            press = 1;
+        }
+        else {
+            press = 0;
+        }
+        //states
+        static int PushState;
+        static int NoPush      = 0x0; 
+        static int MaybePushed = 0x1; 
+        static int Pushed      = 0x2; 
+        static int MaybeNoPush = 0x4; 
 
-        // draw key number
-        tft_fillRoundRect(30,200, 100, 28, 1, ILI9341_BLACK);// x,y,w,h,radius,color
-        tft_setCursor(30, 200);
-        tft_setTextColor(ILI9341_YELLOW); tft_setTextSize(4);
-        sprintf(buffer,"%d", i);
-        if (i==10)sprintf(buffer,"*");
-        if (i==11)sprintf(buffer,"#");
-        tft_writeString(buffer);
+        // Debouncer
+        switch (PushState) {
+            case NoPush:
+                if (press) { PushState = NoPush;}
+                else { PushState = NoPush; }
+                break;
+            case MaybePushed:
+                if (press) {
+                    PushState = Pushed;
+                    //code to perform an action or record a digit
+                    
+                    // draw key number
+                    tft_fillRoundRect(30,200, 100, 28, 1, ILI9341_BLACK);// x,y,w,h,radius,color
+                    tft_setCursor(30, 200);
+                    tft_setTextColor(ILI9341_YELLOW); tft_setTextSize(4);
+                    sprintf(buffer,"%d", i);
+                    if (i==10)sprintf(buffer,"*");
+                    if (i==11)sprintf(buffer,"#");
+                    tft_writeString(buffer);
+                }
+                else { PushState = NoPush; }
+                break;
+            case Pushed:
+                if (press) { PushState = Pushed; }
+                else { PushState = MaybeNoPush; }
+                break;                
+            case MaybeNoPush:
+                if (press) { PushState = Pushed; }
+                else { PushState = NoPush; }
+                break;        
+        }
 
         // NEVER exit while
       } // END WHILE(1)
