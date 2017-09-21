@@ -32,6 +32,11 @@
 #define dirSS   TRISBbits.TRISB13
 #define anSS    ANSELBbits.ANSB13
 
+#define NoPush      1 
+#define MaybePushed 2 
+#define Pushed      3 
+#define MaybeNoPush 4
+
 #define TABLE_SIZE 256
 
 int16_t sineTable[TABLE_SIZE] = {0,50,100,151,201,251,300,350,399,449,497,546,594,642,690,737,783,830,875,920,965,
@@ -112,12 +117,12 @@ int16_t triangleTable[TABLE_SIZE];
 #define F_dac 550000
 const short PR = F_CPU/F_dac - 1;
 
-volatile uint32_t accum_amt;
-
-volatile uint8_t counter = 0;
+volatile uint32_t accum_amtA, accum_amtB;
 
 // string buffer
 char buffer[60];
+
+int PushState;
 
 // === thread structures ============================================
 // thread control structs
@@ -154,7 +159,21 @@ static PT_THREAD (protothread_keypad(struct pt *pt))
     mPORTBSetPinsDigitalIn(BIT_7 | BIT_8 | BIT_9);    //Set port as input
 
      while(1) {
-
+        //UI
+//        tft_fillRoundRect(0,0, 200, 50, 1, ILI9341_BLACK);// x,y,w,h,radius,color
+        tft_setCursor(0, 0);
+        tft_setTextColor(ILI9341_YELLOW); tft_setTextSize(2);
+        tft_writeString("Press a key to play a song!");
+        tft_setCursor(0, 30);
+        tft_setTextColor(ILI9341_YELLOW); tft_setTextSize(2);
+        tft_writeString("1) Mario Theme Song");
+        tft_setCursor(0, 60);
+        tft_setTextColor(ILI9341_YELLOW); tft_setTextSize(2);
+        tft_writeString("2) Twinkle-Twinkle Little Star");
+        tft_setCursor(0, 90);
+        tft_setTextColor(ILI9341_YELLOW); tft_setTextSize(2);
+        tft_writeString("3) Amazing Grace");
+        
         // read each row sequentially
         mPORTAClearBits(BIT_0 | BIT_1 | BIT_2 | BIT_3);
         pattern = 1; mPORTASetBits(pattern);
@@ -188,17 +207,11 @@ static PT_THREAD (protothread_keypad(struct pt *pt))
         else {
             press = 0;
         }
-        //states
-        static int PushState;
-        static int NoPush      = 0x0; 
-        static int MaybePushed = 0x1; 
-        static int Pushed      = 0x2; 
-        static int MaybeNoPush = 0x4; 
 
         // Debouncer
         switch (PushState) {
             case NoPush:
-                if (press) { PushState = NoPush;}
+                if (press) { PushState = MaybePushed;}
                 else { PushState = NoPush; }
                 break;
             case MaybePushed:
@@ -226,30 +239,34 @@ static PT_THREAD (protothread_keypad(struct pt *pt))
                 else { PushState = NoPush; }
                 break;        
         }
-
+ 
         // NEVER exit while
       } // END WHILE(1)
   PT_END(pt);
 } // keypad thread
 
 int i = 0;
+int j =0;
 uint16_t base_dur;
-uint8_t  note_dur;
-uint32_t total_dur;
-uint32_t note;
+uint8_t  noteA_dur, noteB_dur;
+uint32_t noteA, noteB;
 //Note Thread ===================================================
 static PT_THREAD (protothread_notes(struct pt *pt))
 {
     PT_BEGIN(pt);
         while(1) {
-            note = mario_note1[i];
-            note_dur = mario_dur1[i];
             base_dur = mario_base_dur;
             
-            total_dur = note_dur * base_dur;
-            accum_amt = note;
-            PT_YIELD_TIME_msec(total_dur);
-            i++;
+            noteA = mario_note1[i];
+            noteA_dur = mario_dur1[i];
+           
+            noteB = mario_note2[j];
+            noteB_dur = mario_dur1[j];
+            
+            accum_amtA = noteA;
+            
+            PT_YIELD_TIME_msec(base_dur);
+
             
         // NEVER exit while
       } // END WHILE(1)
@@ -280,18 +297,24 @@ void initTimers(void){
     OpenTimer1(T1_ON | T1_PS_1_1, PR);
     // Configure T1 for DAC update frequency
     ConfigIntTimer1(T1_INT_ON | T1_INT_PRIOR_2); 
+    
+      // Setup Timers
+    OpenTimer2(T2_ON | T2_SOURCE_INT | T2_PS_1_1 , 238);
 }
 
-uint32_t accum = 0;
+uint32_t accumA = 0;
+uint32_t accumB = 0;
 void __ISR(_TIMER_1_VECTOR, ipl2) T1Int(void){
-    //accum_amt = G4;
-    accum += accum_amt;
-    int16_t sine_valA = 2048+sineTable[(accum>>24)&0xff];
-    
+    accumA += accum_amtA;
+    accumB += accum_amtB;
+    int16_t sine_valA = 2048+sineTable[(accumA>>24)&0xff];
+    int16_t sine_valB = 2048+sineTable[(accumB>>24)&0xff];
     
     writeDAC(0x3000 | sine_valA); // write to channel A, gain = 1
-    //writeDAC(0xB000 | triangleTable[counter]); // write to channel B, gain = 1
-    if (((accum>>24)&0xff) == TABLE_SIZE) accum = 0;
+    writeDAC(0xB000 | sine_valB); // write to channel B, gain = 1
+    
+    if (((accumA>>24)&0xff) == TABLE_SIZE) accumA = 0;
+    if (((accumB>>24)&0xff) == TABLE_SIZE) accumB = 0;
     LATAINV = 1;
     mT1ClearIntFlag();
 }
@@ -308,8 +331,6 @@ void main(void) {
   // turns OFF UART support and debugger pin
   PT_setup(); 
   
-  // Setup Timers
- OpenTimer2(T2_ON | T2_SOURCE_INT | T2_PS_1_1 , 238);
   //================================================
     int i,j;
    
