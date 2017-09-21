@@ -122,7 +122,7 @@ volatile uint32_t accum_amtA, accum_amtB;
 // string buffer
 char buffer[60];
 
-int PushState;
+int PushState = 1;
 
 // === thread structures ============================================
 // thread control structs
@@ -142,6 +142,12 @@ int sys_time_seconds ;
 // B8 -- col 2 -- 10k internal pulldown resistor
 // B9 -- col 3 -- 10k internal pulldown resistor
 
+//values set by keypad
+int selection = 0, num_notes = 0;
+int playing = 0;
+
+//Keeps track of how many times the user has pressed the button (1,2,or 3)
+int input_num = 0;
 static PT_THREAD (protothread_keypad(struct pt *pt))
 {
     PT_BEGIN(pt);
@@ -157,23 +163,8 @@ static PT_THREAD (protothread_keypad(struct pt *pt))
     mPORTASetPinsDigitalOut(BIT_0 | BIT_1 | BIT_2 | BIT_3);    //Set port as output
     // PortB as inputs
     mPORTBSetPinsDigitalIn(BIT_7 | BIT_8 | BIT_9);    //Set port as input
-
-     while(1) {
-        //UI
-//        tft_fillRoundRect(0,0, 200, 50, 1, ILI9341_BLACK);// x,y,w,h,radius,color
-        tft_setCursor(0, 0);
-        tft_setTextColor(ILI9341_YELLOW); tft_setTextSize(2);
-        tft_writeString("Press a key to play a song!");
-        tft_setCursor(0, 30);
-        tft_setTextColor(ILI9341_YELLOW); tft_setTextSize(2);
-        tft_writeString("1) Mario Theme Song");
-        tft_setCursor(0, 60);
-        tft_setTextColor(ILI9341_YELLOW); tft_setTextSize(2);
-        tft_writeString("2) Twinkle-Twinkle Little Star");
-        tft_setCursor(0, 90);
-        tft_setTextColor(ILI9341_YELLOW); tft_setTextSize(2);
-        tft_writeString("3) Amazing Grace");
-        
+    
+     while(1) {        
         // read each row sequentially
         mPORTAClearBits(BIT_0 | BIT_1 | BIT_2 | BIT_3);
         pattern = 1; mPORTASetBits(pattern);
@@ -207,7 +198,6 @@ static PT_THREAD (protothread_keypad(struct pt *pt))
         else {
             press = 0;
         }
-
         // Debouncer
         switch (PushState) {
             case NoPush:
@@ -216,17 +206,17 @@ static PT_THREAD (protothread_keypad(struct pt *pt))
                 break;
             case MaybePushed:
                 if (press) {
-                    PushState = Pushed;
                     //code to perform an action or record a digit
                     
                     // draw key number
-                    tft_fillRoundRect(30,200, 100, 28, 1, ILI9341_BLACK);// x,y,w,h,radius,color
+                    //tft_fillRoundRect(30,200, 100, 28, 1, ILI9341_BLACK);// x,y,w,h,radius,color
                     tft_setCursor(30, 200);
                     tft_setTextColor(ILI9341_YELLOW); tft_setTextSize(4);
                     sprintf(buffer,"%d", i);
                     if (i==10)sprintf(buffer,"*");
                     if (i==11)sprintf(buffer,"#");
                     tft_writeString(buffer);
+                    PushState = Pushed;
                 }
                 else { PushState = NoPush; }
                 break;
@@ -241,7 +231,8 @@ static PT_THREAD (protothread_keypad(struct pt *pt))
         }
  
         // NEVER exit while
-      } // END WHILE(1)
+     } // END WHILE(1)
+    
   PT_END(pt);
 } // keypad thread
 
@@ -250,24 +241,77 @@ int j =0;
 uint16_t base_dur;
 uint8_t  noteA_dur, noteB_dur;
 uint32_t noteA, noteB;
+uint8_t noteA_count = 0, noteB_count = 0;
 //Note Thread ===================================================
 static PT_THREAD (protothread_notes(struct pt *pt))
 {
     PT_BEGIN(pt);
         while(1) {
-            base_dur = mario_base_dur;
+            if (selection == 0){
+                base_dur = 10;
+                noteA = 0;
+                noteB = 0;
+                tft_fillRect(0,25,29,200, ILI9341_BLACK);
+            }
+            else if(selection == 1){
+                base_dur = mario_base_dur;
             
-            noteA = mario_note1[i];
-            noteA_dur = mario_dur1[i];
+                noteA = mario_note1[i];
+                noteA_dur = mario_dur1[i];
            
-            noteB = mario_note2[j];
-            noteB_dur = mario_dur1[j];
+                noteB = mario_note2[j];
+                noteB_dur = mario_dur2[j];
+                
+                playing = 1;
+                tft_fillCircle(15,35,10, ILI9341_GREEN);
+            }
+            else if(selection == 2){
+                base_dur = amazing_base_dur;
+            
+                noteA = amazing_note1[i];
+                noteA_dur = amazing_dur1[i];
+           
+                noteB = amazing_note2[j];
+                noteB_dur = amazing_dur2[j];
+                
+                playing = 1;
+                tft_fillCircle(15,125,10, ILI9341_GREEN);
+            }
+            
+            else if(selection == 3){
+                base_dur = twinkle_base_dur;
+            
+                noteA = twinkle_note1[i];
+                noteA_dur = twinkle_dur1[i];
+           
+                noteB = twinkle_note2[j];
+                noteB_dur = twinkle_dur2[j];
+                
+                playing = 1;
+                tft_fillCircle(15,65,10, ILI9341_GREEN);
+            }
             
             accum_amtA = noteA;
+            accum_amtB = noteB;
             
             PT_YIELD_TIME_msec(base_dur);
-
-            
+            noteA_count++;
+            noteB_count++;
+            if (noteA_count == noteA_dur) {
+                noteA_count = 0;
+                i++;
+            }
+            if (noteB_count == noteB_dur) {
+                noteB_count = 0;
+                j++;
+            }
+            if((noteB_dur == 0 && noteA_dur == 0) || (i >= num_notes)){
+                selection = 0;
+                i = 0;
+                j = 0;
+                playing = 0;
+            }
+              
         // NEVER exit while
       } // END WHILE(1)
   PT_END(pt);
@@ -310,8 +354,10 @@ void __ISR(_TIMER_1_VECTOR, ipl2) T1Int(void){
     int16_t sine_valA = 2048+sineTable[(accumA>>24)&0xff];
     int16_t sine_valB = 2048+sineTable[(accumB>>24)&0xff];
     
-    writeDAC(0x3000 | sine_valA); // write to channel A, gain = 1
-    writeDAC(0xB000 | sine_valB); // write to channel B, gain = 1
+    int16_t sine_valTotal = (sine_valA>>1) + (sine_valB>>1);
+    
+    writeDAC(0x3000 | sine_valTotal); // write to channel A, gain = 1
+    //writeDAC(0xB000 | sine_valB); // write to channel B, gain = 1
     
     if (((accumA>>24)&0xff) == TABLE_SIZE) accumA = 0;
     if (((accumB>>24)&0xff) == TABLE_SIZE) accumB = 0;
@@ -320,19 +366,18 @@ void __ISR(_TIMER_1_VECTOR, ipl2) T1Int(void){
 }
 // === Main  ======================================================
 void main(void) {
-  SYSTEMConfigPerformance(PBCLK);
- ANSELA = 0; ANSELB = 0; CM1CON = 0; CM2CON = 0;
- //TRISB = 0x4000; //TRISA = 0x0020;
+    SYSTEMConfigPerformance(PBCLK);
+    ANSELA = 0; ANSELB = 0; CM1CON = 0; CM2CON = 0;
+    //TRISB = 0x4000; //TRISA = 0x0020;
  
-   //internal pull downs for keypad
- EnablePullDownB( BIT_7 | BIT_8 | BIT_9);
+    //internal pull downs for keypad
+    EnablePullDownB( BIT_7 | BIT_8 | BIT_9);
   
-  // === config threads ==========
-  // turns OFF UART support and debugger pin
-  PT_setup(); 
+    // === config threads ==========
+    // turns OFF UART support and debugger pin
+    PT_setup(); 
   
-  //================================================
-    int i,j;
+    //================================================
    
     initDAC();
     TRISACLR = 1;
@@ -340,24 +385,44 @@ void main(void) {
     initTimers();
     INTEnableSystemMultiVectoredInt();
     
-  //===============================================  
-  // init the threads
-  PT_INIT(&pt_keypad);
-  PT_INIT(&pt_notes);
+    //===============================================  
+    // init the threads
+    PT_INIT(&pt_keypad);
+    PT_INIT(&pt_notes);
 
 
-  // init the display
-  tft_init_hw();
-  tft_begin();
-  tft_fillScreen(ILI9341_BLACK);
-  //240x320 vertical display
-  tft_setRotation(3); // Use tft_setRotation(1) for 320x240
-  
-  // round-robin scheduler for threads
-  while (1){
+    // init the display
+    tft_init_hw();
+    tft_begin();
+    tft_fillScreen(ILI9341_BLACK);
+    //240x320 vertical display
+    tft_setRotation(3); // Use tft_setRotation(1) for 320x240
+    
+    //UI
+        tft_fillRoundRect(0,0, 200, 50, 1, ILI9341_BLACK);// x,y,w,h,radius,color
+        tft_setCursor(0, 0);
+        tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
+        tft_writeString("Press a key to play a song!");
+        tft_setCursor(30, 30);
+        tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
+        tft_writeString("1) Mario Theme Song");
+        tft_setCursor(30, 60);
+        tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
+        tft_writeString("2) Twinkle-Twinkle");
+        tft_setCursor(30, 90);
+        tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
+        tft_writeString("   Little Star");
+        tft_setCursor(30, 120);
+        tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
+        tft_writeString("3) Amazing Grace");
+    
+        selection = 1;
+        num_notes = 200;
+    // round-robin scheduler for threads
+    while (1){
         PT_SCHEDULE(protothread_keypad(&pt_keypad));
         PT_SCHEDULE(protothread_notes(&pt_notes));
-        }
+    }
   } // main
 // === end  ======================================================
 //*/
