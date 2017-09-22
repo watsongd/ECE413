@@ -209,14 +209,15 @@ static PT_THREAD (protothread_keypad(struct pt *pt))
                     //code to perform an action or record a digit
                     
                     // draw key number
-                    //tft_fillRoundRect(30,200, 100, 28, 1, ILI9341_BLACK);// x,y,w,h,radius,color
-                    tft_setCursor(30, 200);
-                    tft_setTextColor(ILI9341_YELLOW); tft_setTextSize(4);
+                    tft_fillRoundRect(30,140, 100, 28, 1, ILI9341_BLACK);// x,y,w,h,radius,color
+                    tft_setCursor(30, 140);
+                    tft_setTextColor(ILI9341_YELLOW); tft_setTextSize(2);
                     sprintf(buffer,"%d", i);
                     if (i==10)sprintf(buffer,"*");
                     if (i==11)sprintf(buffer,"#");
                     tft_writeString(buffer);
                     PushState = Pushed;
+                    //selection = i;
                 }
                 else { PushState = NoPush; }
                 break;
@@ -236,8 +237,8 @@ static PT_THREAD (protothread_keypad(struct pt *pt))
   PT_END(pt);
 } // keypad thread
 
-int i = 0;
-int j =0;
+int k = 0;
+int j = 0;
 uint16_t base_dur;
 uint8_t  noteA_dur, noteB_dur;
 uint32_t noteA, noteB;
@@ -256,8 +257,8 @@ static PT_THREAD (protothread_notes(struct pt *pt))
             else if(selection == 1){
                 base_dur = mario_base_dur;
             
-                noteA = mario_note1[i];
-                noteA_dur = mario_dur1[i];
+                noteA = mario_note1[k];
+                noteA_dur = mario_dur1[k];
            
                 noteB = mario_note2[j];
                 noteB_dur = mario_dur2[j];
@@ -268,8 +269,8 @@ static PT_THREAD (protothread_notes(struct pt *pt))
             else if(selection == 2){
                 base_dur = amazing_base_dur;
             
-                noteA = amazing_note1[i];
-                noteA_dur = amazing_dur1[i];
+                noteA = amazing_note1[k];
+                noteA_dur = amazing_dur1[k];
            
                 noteB = amazing_note2[j];
                 noteB_dur = amazing_dur2[j];
@@ -281,8 +282,8 @@ static PT_THREAD (protothread_notes(struct pt *pt))
             else if(selection == 3){
                 base_dur = twinkle_base_dur;
             
-                noteA = twinkle_note1[i];
-                noteA_dur = twinkle_dur1[i];
+                noteA = twinkle_note1[k];
+                noteA_dur = twinkle_dur1[k];
            
                 noteB = twinkle_note2[j];
                 noteB_dur = twinkle_dur2[j];
@@ -299,15 +300,15 @@ static PT_THREAD (protothread_notes(struct pt *pt))
             noteB_count++;
             if (noteA_count == noteA_dur) {
                 noteA_count = 0;
-                i++;
+                k++;
             }
             if (noteB_count == noteB_dur) {
                 noteB_count = 0;
                 j++;
             }
-            if((noteB_dur == 0 && noteA_dur == 0) || (i >= num_notes)){
+            if((noteB_dur == 0 && noteA_dur == 0) || (k >= num_notes)){
                 selection = 0;
-                i = 0;
+                k = 0;
                 j = 0;
                 playing = 0;
             }
@@ -399,25 +400,26 @@ void main(void) {
     tft_setRotation(3); // Use tft_setRotation(1) for 320x240
     
     //UI
-        tft_fillRoundRect(0,0, 200, 50, 1, ILI9341_BLACK);// x,y,w,h,radius,color
-        tft_setCursor(0, 0);
-        tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
-        tft_writeString("Press a key to play a song!");
-        tft_setCursor(30, 30);
-        tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
-        tft_writeString("1) Mario Theme Song");
-        tft_setCursor(30, 60);
-        tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
-        tft_writeString("2) Twinkle-Twinkle");
-        tft_setCursor(30, 90);
-        tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
-        tft_writeString("   Little Star");
-        tft_setCursor(30, 120);
-        tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
-        tft_writeString("3) Amazing Grace");
+    tft_fillRoundRect(0,0, 200, 50, 1, ILI9341_BLACK);// x,y,w,h,radius,color
+    tft_setCursor(0, 0);
+    tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
+    tft_writeString("Press a key to play a song!");
+    tft_setCursor(30, 30);
+    tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
+    tft_writeString("1) Mario Theme Song");
+    tft_setCursor(30, 60);
+    tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
+    tft_writeString("2) Twinkle-Twinkle");
+    tft_setCursor(30, 90);
+    tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
+    tft_writeString("   Little Star");
+    tft_setCursor(30, 120);
+    tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
+    tft_writeString("3) Amazing Grace");
     
-        selection = 1;
-        num_notes = 200;
+    selection = 3;
+    num_notes = 200;
+    
     // round-robin scheduler for threads
     while (1){
         PT_SCHEDULE(protothread_keypad(&pt_keypad));
