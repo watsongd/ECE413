@@ -145,7 +145,9 @@ int sys_time_seconds ;
 //values set by keypad
 int selection = 0, num_notes = 0;
 int playing = 0;
-
+int note_selection = 0, song_selection = 0;
+int go_play = 0;
+int num_presses = 0;
 //Keeps track of how many times the user has pressed the button (1,2,or 3)
 int input_num = 0;
 static PT_THREAD (protothread_keypad(struct pt *pt))
@@ -209,16 +211,38 @@ static PT_THREAD (protothread_keypad(struct pt *pt))
                     //code to perform an action or record a digit
                     
                     // draw key number
-                    tft_fillRoundRect(30,140, 100, 28, 1, ILI9341_BLACK);// x,y,w,h,radius,color
-                    tft_setCursor(30, 140);
-                    tft_setTextColor(ILI9341_YELLOW); tft_setTextSize(2);
-                    sprintf(buffer,"%d", i);
-                    if (i==10)sprintf(buffer,"*");
-                    if (i==11)sprintf(buffer,"#");
-                    tft_writeString(buffer);
-                    PushState = Pushed;
-                    //selection = i;
+//                    tft_fillRoundRect(30,140, 100, 28, 1, ILI9341_BLACK);// x,y,w,h,radius,color
+//                    tft_setCursor(30, 140);
+//                    tft_setTextColor(ILI9341_YELLOW); tft_setTextSize(2);
+//                    sprintf(buffer,"%d", i);
+//                    if (i==10)sprintf(buffer,"*");
+//                    if (i==11)sprintf(buffer,"#");
+//                    tft_writeString(buffer);
+//                    PushState = Pushed;
+//                    if (!playing) {
+//                        selection = i;
+//                    }
+                    if (num_presses == 0) {
+                        song_selection = i;
+                        num_presses++;
+                    }
+                    if (num_presses > 0) {
+                        if (i < 11) {
+                            if (note_selection > 0) {
+                                //concatenate logic
+                                num_presses++;
+                            }
+                            else {
+                            note_selection = i;
+                            num_presses++;
+                            }
+                        }
+                        else {
+                            selection = song_selection;
+                        }
+                    }
                 }
+                    
                 else { PushState = NoPush; }
                 break;
             case Pushed:
@@ -249,55 +273,64 @@ static PT_THREAD (protothread_notes(struct pt *pt))
     PT_BEGIN(pt);
         while(1) {
             if (selection == 0){
-                base_dur = 10;
+                base_dur = 100;
                 noteA = 0;
                 noteB = 0;
+                noteA_dur = 1;
+                noteB_dur = 1;
+                playing = 0;
+                j = 0;
+                k = 0;
+                //noteA_count = 0;
+                //noteB_count = 0;
                 tft_fillRect(0,25,29,200, ILI9341_BLACK);
             }
             else if(selection == 1){
                 base_dur = mario_base_dur;
-            
+
                 noteA = mario_note1[k];
                 noteA_dur = mario_dur1[k];
-           
+
                 noteB = mario_note2[j];
                 noteB_dur = mario_dur2[j];
-                
+
                 playing = 1;
                 tft_fillCircle(15,35,10, ILI9341_GREEN);
             }
-            else if(selection == 2){
+            else if(selection == 3){
                 base_dur = amazing_base_dur;
-            
+
                 noteA = amazing_note1[k];
                 noteA_dur = amazing_dur1[k];
-           
+
                 noteB = amazing_note2[j];
                 noteB_dur = amazing_dur2[j];
-                
+
                 playing = 1;
                 tft_fillCircle(15,125,10, ILI9341_GREEN);
             }
-            
-            else if(selection == 3){
+
+            else if(selection == 2){
                 base_dur = twinkle_base_dur;
-            
+
                 noteA = twinkle_note1[k];
                 noteA_dur = twinkle_dur1[k];
-           
+
                 noteB = twinkle_note2[j];
                 noteB_dur = twinkle_dur2[j];
-                
+
                 playing = 1;
                 tft_fillCircle(15,65,10, ILI9341_GREEN);
             }
-            
+
             accum_amtA = noteA;
             accum_amtB = noteB;
-            
+
             PT_YIELD_TIME_msec(base_dur);
-            noteA_count++;
-            noteB_count++;
+            if (playing == 1) {
+                noteA_count++;
+                noteB_count++;
+            }
             if (noteA_count == noteA_dur) {
                 noteA_count = 0;
                 k++;
@@ -306,13 +339,12 @@ static PT_THREAD (protothread_notes(struct pt *pt))
                 noteB_count = 0;
                 j++;
             }
-            if((noteB_dur == 0 && noteA_dur == 0) || (k >= num_notes)){
+            if((noteB_dur == 0 && noteA_dur == 0) || (k >= note_slection)){
                 selection = 0;
                 k = 0;
                 j = 0;
                 playing = 0;
             }
-              
         // NEVER exit while
       } // END WHILE(1)
   PT_END(pt);
@@ -417,7 +449,7 @@ void main(void) {
     tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
     tft_writeString("3) Amazing Grace");
     
-    selection = 3;
+    //selection = 3;
     num_notes = 200;
     
     // round-robin scheduler for threads
