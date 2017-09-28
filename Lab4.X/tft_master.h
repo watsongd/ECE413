@@ -1,104 +1,25 @@
-/***************************************************
-  This is our library for the Adafruit  ILI9341 Breakout and Shield
-  ----> http://www.adafruit.com/products/1651
+/*  Author: Matthew Watkins
+ *  Basic LCD functions for TFT LCD for PIC32
+ *
+ *  Modified from Adafruit Parallel 2.4" TFT LCD targetting Arduino
+ *
+ */
 
-  Check out the links above for our tutorials and wiring diagrams
-  These displays use SPI to communicate, 4 or 5 pins are required to
-  interface (RST is optional)
-  Adafruit invests time and resources providing this open source code,
-  please support Adafruit and open-source hardware by purchasing
-  products from Adafruit!
+// Graphics library by ladyada/adafruit with init code from Rossum
+// MIT license
 
-  Written by Limor Fried/Ladyada for Adafruit Industries.
-  MIT license, all text above must be included in any redistribution
- ****************************************************/
+#ifndef _ADAFRUIT_TFTLCD_H_
+#define _ADAFRUIT_TFTLCD_H_
 
-#ifndef _ADAFRUIT_ILI9341H_
-#define _ADAFRUIT_ILI9341H_
+typedef int int32_t;
+typedef unsigned int uint32_t;
 
-//typedef short int16_t;
-//typedef unsigned short uint16_t;
-//typedef char int8_t;
-//typedef unsigned char uint8_t;
-
-#include <stdio.h>
+#include <stdint.h> //for 16 and 8 bit types
 #include "plib.h"
-//#include <Adafruit_GFX.h>
-
-#define _dc         LATBbits.LATB0
-#define TRIS_dc     TRISBbits.TRISB0
-#define _dc_high()  {LATBSET = 1;}
-#define _dc_low()   {LATBCLR = 1;}
-
-#define _cs         LATBbits.LATB1
-#define TRIS_cs     TRISBbits.TRISB1
-#define _cs_high()  {LATBSET = 2;}
-#define _cs_low()   {LATBCLR = 2;}
-
-#define _rst        LATBbits.LATB2
-#define TRIS_rst    TRISBbits.TRISB2
-#define _rst_high() {LATBSET = 4;}
-#define _rst_low()  {LATBCLR = 4;}
+#include "pin_magic.h"
 
 #define ILI9341_TFTWIDTH  240
 #define ILI9341_TFTHEIGHT 320
-
-#define ILI9341_NOP     0x00
-#define ILI9341_SWRESET 0x01
-#define ILI9341_RDDID   0x04
-#define ILI9341_RDDST   0x09
-
-#define ILI9341_SLPIN   0x10
-#define ILI9341_SLPOUT  0x11
-#define ILI9341_PTLON   0x12
-#define ILI9341_NORON   0x13
-
-#define ILI9341_RDMODE  0x0A
-#define ILI9341_RDMADCTL  0x0B
-#define ILI9341_RDPIXFMT  0x0C
-#define ILI9341_RDIMGFMT  0x0D
-#define ILI9341_RDSELFDIAG  0x0F
-
-#define ILI9341_INVOFF  0x20
-#define ILI9341_INVON   0x21
-#define ILI9341_GAMMASET 0x26
-#define ILI9341_DISPOFF 0x28
-#define ILI9341_DISPON  0x29
-
-#define ILI9341_CASET   0x2A
-#define ILI9341_PASET   0x2B
-#define ILI9341_RAMWR   0x2C
-#define ILI9341_RAMRD   0x2E
-
-#define ILI9341_PTLAR   0x30
-#define ILI9341_MADCTL  0x36
-#define ILI9341_PIXFMT  0x3A
-
-#define ILI9341_FRMCTR1 0xB1
-#define ILI9341_FRMCTR2 0xB2
-#define ILI9341_FRMCTR3 0xB3
-#define ILI9341_INVCTR  0xB4
-#define ILI9341_DFUNCTR 0xB6
-
-#define ILI9341_PWCTR1  0xC0
-#define ILI9341_PWCTR2  0xC1
-#define ILI9341_PWCTR3  0xC2
-#define ILI9341_PWCTR4  0xC3
-#define ILI9341_PWCTR5  0xC4
-#define ILI9341_VMCTR1  0xC5
-#define ILI9341_VMCTR2  0xC7
-
-#define ILI9341_RDID1   0xDA
-#define ILI9341_RDID2   0xDB
-#define ILI9341_RDID3   0xDC
-#define ILI9341_RDID4   0xDD
-
-#define ILI9341_GMCTRP1 0xE0
-#define ILI9341_GMCTRN1 0xE1
-/*
-#define ILI9341_PWCTR6  0xFC
-
-*/
 
 // Color definitions
 #define ILI9341_BLACK       0x0000      /*   0,   0,   0 */
@@ -120,6 +41,9 @@
 #define ILI9341_ORANGE      0xFD20      /* 255, 165,   0 */
 #define ILI9341_GREENYELLOW 0xAFE5      /* 173, 255,  47 */
 #define ILI9341_PINK        0xF81F
+#define ILI9341_BROWN       0xBBCA   //0x82A7
+#define ILI9341_TAN         0xEF36
+
 
 #define PBCLK 40000000 // peripheral bus clock
 #define SPI_freq    20000000
@@ -129,32 +53,55 @@
 #define dTime_ms PBCLK/2000
 #define dTime_us PBCLK/2000000
 
-void tft_init_hw(void);
-void tft_spiwrite(unsigned char c);
-void tft_spiwrite8(unsigned char c);
-void tft_spiwrite16(unsigned short c);
-void tft_writecommand(unsigned char c);
-void tft_writecommand16(unsigned short c);
-void tft_writedata(unsigned char c);
-void tft_writedata16(unsigned short c);
-void tft_commandList(unsigned char *addr);
-void tft_begin(void);
-void tft_setAddrWindow(unsigned short x0, unsigned short y0, unsigned short x1, unsigned short y1);
-void tft_pushColor(unsigned short color);
-void tft_drawPixel(short x, short y, unsigned short color);
-void tft_drawFastVLine(short x, short y, short h, unsigned short color);
-void tft_drawFastHLine(short x, short y, short w, unsigned short color);
-void tft_fillScreen(unsigned short color);
-void tft_fillRect(short x, short y, short w, short h, unsigned short color);
-unsigned short tft_Color565(unsigned char r, unsigned char g, unsigned char b);
-void tft_setRotation(unsigned char m);
-unsigned char tft_spiread(void);
-unsigned char tft_readdata(void);
-unsigned char tft_readcommand8(unsigned char c);
+  void     tft_begin(); //assuming ID of 0x9341
+  void     tft_begin_id(uint16_t id);
+  void     tft_init_hw(void);
+  void     tft_drawPixel(int16_t x, int16_t y, uint16_t color);
+  void     tft_drawFastHLine(int16_t x0, int16_t y0, int16_t w, uint16_t color);
+  void     tft_drawFastVLine(int16_t x0, int16_t y0, int16_t h, uint16_t color);
+  void     tft_fillRect(int16_t x, int16_t y, int16_t w, int16_t h, uint16_t c);
+  void     tft_fillScreen(uint16_t color);
+  uint16_t tft_color565(uint8_t r, uint8_t g, uint8_t b);
+  void     tft_setRotation(uint8_t x);
 
-unsigned short _width, _height;
+  void     tft_reset(void);
+  void     tft_setRegisters8(uint8_t *ptr, uint8_t n);
+  void     tft_setRegisters16(uint16_t *ptr, uint8_t n);
+
+       // These methods are public in order for BMP examples to work:
+  inline void     tft_setAddrWindow(int x1, int y1, int x2, int y2);
+  void     tft_pushColors(uint16_t *data, uint8_t len, int first);
+
+
+  //uint16_t tft_readPixel(int16_t x, int16_t y);
+  uint16_t tft_readID();
+  uint32_t tft_readReg(uint8_t r);
+
+uint16_t _width, _height;
+uint8_t rotation;
 
 void delay_ms(unsigned long);
 void delay_us(unsigned long);
+
+#ifndef tft_writeRegister8
+           void tft_writeRegister8(uint8_t a, uint8_t d);
+#endif
+#ifndef tft_writeRegister16
+           void tft_writeRegister16(uint16_t a, uint16_t d);
+#endif
+    void tft_writeRegister24(uint8_t a, uint32_t d);
+    void tft_writeRegister32(uint8_t a, uint32_t d);
+#ifndef tft_writeRegisterPair
+    void tft_writeRegisterPair(uint8_t aH, uint8_t aL, uint16_t d);
+#endif
+    void tft_setLR();
+    void tft_flood(uint16_t color, uint32_t len);
+  uint8_t  driver;
+
+#ifndef read8
+  uint8_t  read8fn(void);
+  #define  read8isFunctionalized
+#endif
+
 
 #endif

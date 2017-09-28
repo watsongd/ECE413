@@ -10,7 +10,8 @@
       <itemPath>pt_cornell_1_2.h</itemPath>
       <itemPath>tft_gfx.h</itemPath>
       <itemPath>tft_master.h</itemPath>
-      <itemPath>notes.h</itemPath>
+      <itemPath>adc_intf.h</itemPath>
+      <itemPath>pin_magic.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"
@@ -23,6 +24,8 @@
       <itemPath>tft_example.c</itemPath>
       <itemPath>tft_gfx.c</itemPath>
       <itemPath>tft_master.c</itemPath>
+      <itemPath>adc_intf.c</itemPath>
+      <itemPath>registers.h</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"
