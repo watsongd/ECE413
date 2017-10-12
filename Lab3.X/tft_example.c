@@ -32,6 +32,11 @@
 #define dirSS   TRISBbits.TRISB13
 #define anSS    ANSELBbits.ANSB13
 
+#define NoPush      1 
+#define MaybePushed 2 
+#define Pushed      3 
+#define MaybeNoPush 4
+
 #define TABLE_SIZE 256
 
 int16_t sineTable[TABLE_SIZE] = {0,50,100,151,201,251,300,350,399,449,497,546,594,642,690,737,783,830,875,920,965,
@@ -112,12 +117,12 @@ int16_t triangleTable[TABLE_SIZE];
 #define F_dac 550000
 const short PR = F_CPU/F_dac - 1;
 
-volatile uint32_t accum_amt;
-
-volatile uint8_t counter = 0;
+volatile uint32_t accum_amtA, accum_amtB;
 
 // string buffer
 char buffer[60];
+
+int PushState = 1;
 
 // === thread structures ============================================
 // thread control structs
@@ -137,6 +142,14 @@ int sys_time_seconds ;
 // B8 -- col 2 -- 10k internal pulldown resistor
 // B9 -- col 3 -- 10k internal pulldown resistor
 
+//values set by keypad
+int selection = 0, num_notes = 0;
+int playing = 0;
+int note_selection = 0, song_selection = 0;
+int go_play = 0;
+int num_presses = 0;
+//Keeps track of how many times the user has pressed the button (1,2,or 3)
+int input_num = 0;
 static PT_THREAD (protothread_keypad(struct pt *pt))
 {
     PT_BEGIN(pt);
@@ -152,9 +165,8 @@ static PT_THREAD (protothread_keypad(struct pt *pt))
     mPORTASetPinsDigitalOut(BIT_0 | BIT_1 | BIT_2 | BIT_3);    //Set port as output
     // PortB as inputs
     mPORTBSetPinsDigitalIn(BIT_7 | BIT_8 | BIT_9);    //Set port as input
-
-     while(1) {
-
+    
+     while(1) {        
         // read each row sequentially
         mPORTAClearBits(BIT_0 | BIT_1 | BIT_2 | BIT_3);
         pattern = 1; mPORTASetBits(pattern);
@@ -188,69 +200,173 @@ static PT_THREAD (protothread_keypad(struct pt *pt))
         else {
             press = 0;
         }
-        //states
-        static int PushState;
-        static int NoPush      = 0x0; 
-        static int MaybePushed = 0x1; 
-        static int Pushed      = 0x2; 
-        static int MaybeNoPush = 0x4; 
-
         // Debouncer
-        switch (PushState) {
-            case NoPush:
-                if (press) { PushState = NoPush;}
-                else { PushState = NoPush; }
-                break;
-            case MaybePushed:
-                if (press) {
-                    PushState = Pushed;
-                    //code to perform an action or record a digit
-                    
-                    // draw key number
-                    tft_fillRoundRect(30,200, 100, 28, 1, ILI9341_BLACK);// x,y,w,h,radius,color
-                    tft_setCursor(30, 200);
-                    tft_setTextColor(ILI9341_YELLOW); tft_setTextSize(4);
-                    sprintf(buffer,"%d", i);
-                    if (i==10)sprintf(buffer,"*");
-                    if (i==11)sprintf(buffer,"#");
-                    tft_writeString(buffer);
-                }
-                else { PushState = NoPush; }
-                break;
-            case Pushed:
-                if (press) { PushState = Pushed; }
-                else { PushState = MaybeNoPush; }
-                break;                
-            case MaybeNoPush:
-                if (press) { PushState = Pushed; }
-                else { PushState = NoPush; }
-                break;        
-        }
+        if (!playing) {
+            switch (PushState) {
+                case NoPush:
+                    if (press) { PushState = MaybePushed;}
+                    else { PushState = NoPush; }
+                    break;
+                case MaybePushed:
+                    if (press) {
+                        //code to perform an action or record a digit
 
+                        // draw key number
+                        tft_fillRoundRect(30,140, 100, 28, 1, ILI9341_BLACK);// x,y,w,h,radius,color
+                        tft_setCursor(30, 140);
+                        tft_setTextColor(ILI9341_YELLOW); tft_setTextSize(2);
+                        sprintf(buffer,"%d", i);
+                        if (i==10)sprintf(buffer,"*");
+                        if (i==11)sprintf(buffer,"#");
+                        tft_writeString(buffer);
+                        PushState = Pushed;
+
+                        if (num_presses == 0) {
+                            song_selection = i;
+                            num_presses++;
+                        }
+                        else if (num_presses > 0) {
+                            if (i < 11) {
+                                if (note_selection > 0) {
+                                    //concatenate logic
+                                    note_selection = note_selection * 10 + i;
+                                    num_presses++;
+                                }
+                                else {
+                                    note_selection = i;
+                                    num_presses++;
+                                }
+                            }
+                            else {
+                                if (note_selection != 0){
+                                    num_notes = note_selection;
+                                }
+                                else {
+                                    num_notes = 300;
+                                }
+                                selection = song_selection;
+                                num_presses = 0;
+                                note_selection = 0;
+                                song_selection = 0;
+                            }
+                        }
+                    }
+
+                    else { PushState = NoPush; }
+                    break;
+                case Pushed:
+                    if (press) { PushState = Pushed; }
+                    else { PushState = MaybeNoPush; }
+                    break;                
+                case MaybeNoPush:
+                    if (press) { PushState = Pushed; }
+                    else { PushState = NoPush; }
+                    break;        
+            }
+        }
         // NEVER exit while
-      } // END WHILE(1)
+     } // END WHILE(1)
+    
   PT_END(pt);
 } // keypad thread
 
-int i = 0;
+int k = 0;
+int j = 0;
 uint16_t base_dur;
-uint8_t  note_dur;
-uint32_t total_dur;
-uint32_t note;
+uint8_t  noteA_dur, noteB_dur;
+uint32_t noteA, noteB;
+uint8_t noteA_count = 0, noteB_count = 0;
 //Note Thread ===================================================
 static PT_THREAD (protothread_notes(struct pt *pt))
 {
     PT_BEGIN(pt);
         while(1) {
-            note = mario_note1[i];
-            note_dur = mario_dur1[i];
-            base_dur = mario_base_dur;
-            
-            total_dur = note_dur * base_dur;
-            accum_amt = note;
-            PT_YIELD_TIME_msec(total_dur);
-            i++;
-            
+            if (selection == 0){
+                base_dur = 100;
+                noteA = 0;
+                noteB = 0;
+                noteA_dur = 1;
+                noteB_dur = 1;
+                playing = 0;
+                j = 0;
+                k = 0;
+                //noteA_count = 0;
+                //noteB_count = 0;
+                tft_fillRect(0,25,29,200, ILI9341_BLACK);
+            }
+            else if(selection == 1){
+                base_dur = mario_base_dur;
+
+                noteA = mario_note1[k];
+                noteA_dur = mario_dur1[k];
+
+                noteB = mario_note2[j];
+                noteB_dur = mario_dur2[j];
+
+                playing = 1;
+                tft_fillCircle(15,35,10, ILI9341_GREEN);
+            }
+            else if(selection == 3){
+                base_dur = amazing_base_dur;
+
+                noteA = amazing_note1[k];
+                noteA_dur = amazing_dur1[k];
+
+                noteB = amazing_note2[j];
+                noteB_dur = amazing_dur2[j];
+
+                playing = 1;
+                tft_fillCircle(15,125,10, ILI9341_GREEN);
+            }
+
+            else if(selection == 2){
+                base_dur = twinkle_base_dur;
+
+                noteA = twinkle_note1[k];
+                noteA_dur = twinkle_dur1[k];
+
+                noteB = twinkle_note2[j];
+                noteB_dur = twinkle_dur2[j];
+
+                playing = 1;
+                tft_fillCircle(15,65,10, ILI9341_GREEN);
+            }
+            else if(selection == 4){
+                base_dur = 100;
+
+                noteA = C6;
+                noteA_dur = 1;
+
+                noteB = C6;
+                noteB_dur = 1;
+                num_notes = 1;
+
+                playing = 1;
+                tft_fillCircle(15,65,10, ILI9341_RED);
+            }
+
+            accum_amtA = noteA;
+            accum_amtB = noteB;
+
+            PT_YIELD_TIME_msec(base_dur);
+            if (playing == 1) {
+                noteA_count++;
+                noteB_count++;
+            }
+            if (noteA_count == noteA_dur) {
+                noteA_count = 0;
+                k++;
+            }
+            if (noteB_count == noteB_dur) {
+                noteB_count = 0;
+                j++;
+            }
+            if((noteB_dur == 0 && noteA_dur == 0) || (k >= num_notes)){
+                selection = 0;
+                k = 0;
+                j = 0;
+                playing = 0;
+            }
         // NEVER exit while
       } // END WHILE(1)
   PT_END(pt);
@@ -280,38 +396,43 @@ void initTimers(void){
     OpenTimer1(T1_ON | T1_PS_1_1, PR);
     // Configure T1 for DAC update frequency
     ConfigIntTimer1(T1_INT_ON | T1_INT_PRIOR_2); 
+    
+      // Setup Timers
+    OpenTimer2(T2_ON | T2_SOURCE_INT | T2_PS_1_1 , 236);
 }
 
-uint32_t accum = 0;
+uint32_t accumA = 0;
+uint32_t accumB = 0;
 void __ISR(_TIMER_1_VECTOR, ipl2) T1Int(void){
-    //accum_amt = G4;
-    accum += accum_amt;
-    int16_t sine_valA = 2048+sineTable[(accum>>24)&0xff];
+    accumA += accum_amtA;
+    accumB += accum_amtB;
+    int16_t sine_valA = 2048+sineTable[(accumA>>24)&0xff];
+    int16_t sine_valB = 2048+sineTable[(accumB>>24)&0xff];
     
+    int16_t sine_valTotal = (sine_valA>>1) + (sine_valB>>1);
     
-    writeDAC(0x3000 | sine_valA); // write to channel A, gain = 1
-    //writeDAC(0xB000 | triangleTable[counter]); // write to channel B, gain = 1
-    if (((accum>>24)&0xff) == TABLE_SIZE) accum = 0;
+    writeDAC(0x3000 | sine_valTotal); // write to channel A, gain = 1
+    //writeDAC(0xB000 | sine_valB); // write to channel B, gain = 1
+    
+    if (((accumA>>24)&0xff) == TABLE_SIZE) accumA = 0;
+    if (((accumB>>24)&0xff) == TABLE_SIZE) accumB = 0;
     LATAINV = 1;
     mT1ClearIntFlag();
 }
 // === Main  ======================================================
 void main(void) {
-  SYSTEMConfigPerformance(PBCLK);
- ANSELA = 0; ANSELB = 0; CM1CON = 0; CM2CON = 0;
- //TRISB = 0x4000; //TRISA = 0x0020;
+    SYSTEMConfigPerformance(PBCLK);
+    ANSELA = 0; ANSELB = 0; CM1CON = 0; CM2CON = 0;
+    //TRISB = 0x4000; //TRISA = 0x0020;
  
-   //internal pull downs for keypad
- EnablePullDownB( BIT_7 | BIT_8 | BIT_9);
+    //internal pull downs for keypad
+    EnablePullDownB( BIT_7 | BIT_8 | BIT_9);
   
-  // === config threads ==========
-  // turns OFF UART support and debugger pin
-  PT_setup(); 
+    // === config threads ==========
+    // turns OFF UART support and debugger pin
+    PT_setup(); 
   
-  // Setup Timers
- OpenTimer2(T2_ON | T2_SOURCE_INT | T2_PS_1_1 , 238);
-  //================================================
-    int i,j;
+    //================================================
    
     initDAC();
     TRISACLR = 1;
@@ -319,24 +440,45 @@ void main(void) {
     initTimers();
     INTEnableSystemMultiVectoredInt();
     
-  //===============================================  
-  // init the threads
-  PT_INIT(&pt_keypad);
-  PT_INIT(&pt_notes);
+    //===============================================  
+    // init the threads
+    PT_INIT(&pt_keypad);
+    PT_INIT(&pt_notes);
 
 
-  // init the display
-  tft_init_hw();
-  tft_begin();
-  tft_fillScreen(ILI9341_BLACK);
-  //240x320 vertical display
-  tft_setRotation(3); // Use tft_setRotation(1) for 320x240
-  
-  // round-robin scheduler for threads
-  while (1){
+    // init the display
+    tft_init_hw();
+    tft_begin();
+    tft_fillScreen(ILI9341_BLACK);
+    //240x320 vertical display
+    tft_setRotation(3); // Use tft_setRotation(1) for 320x240
+    
+    //UI
+    tft_fillRoundRect(0,0, 200, 50, 1, ILI9341_BLACK);// x,y,w,h,radius,color
+    tft_setCursor(0, 0);
+    tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
+    tft_writeString("Press a key to play a song!");
+    tft_setCursor(30, 30);
+    tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
+    tft_writeString("1) Mario Theme Song");
+    tft_setCursor(30, 60);
+    tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
+    tft_writeString("2) Twinkle-Twinkle");
+    tft_setCursor(30, 90);
+    tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
+    tft_writeString("   Little Star");
+    tft_setCursor(30, 120);
+    tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
+    tft_writeString("3) Amazing Grace");
+    
+    //selection = 3;
+    num_notes = 200;
+    
+    // round-robin scheduler for threads
+    while (1){
         PT_SCHEDULE(protothread_keypad(&pt_keypad));
         PT_SCHEDULE(protothread_notes(&pt_notes));
-        }
+    }
   } // main
 // === end  ======================================================
 //*/
