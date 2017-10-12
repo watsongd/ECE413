@@ -51,11 +51,12 @@ void addMole(int16_t x, int16_t y, int16_t duration) {
     tft_fillCircle(x+(MOLERADIUS/3+1), y-(MOLERADIUS/3+1), MOLERADIUS/6, ILI9341_BLACK); //right eye
     tft_downArc(x, y+(3*MOLERADIUS/4), MOLERADIUS/2-2, MOLERADIUS/3-1, ILI9341_BLACK);
     
+    int i;
     //add the mole to the array
-    for(int i =0; i < 16; i++) {
+    for(i =0; i < 16; i++) {
         //find the first available spot in the array
-        if (list[i].duration == NULL) {
-            list[i].duration = duration;
+        if (list[i].duration == 0) {
+            list[i].duration = duration + 1;
             list[i].y = y;
             list[i].x = x;
         }
@@ -66,8 +67,9 @@ void addMole(int16_t x, int16_t y, int16_t duration) {
 int countMoles() {
     
     int count = 0;
-    for(int i = 0; i < 16; i++) {
-        if (list[i].duration != NULL) {
+    int i;
+    for(i = 0; i < 16; i++) {
+        if (list[i].duration != 0) {
             count++;
         }
     }
@@ -85,8 +87,9 @@ bool checkNoOverlap(int16_t x, int16_t y) {
     }
     //Next, check that it doesn't overlap with the other moles
     if (countMoles() > 0) {
-        for(int i = 0; i < 16; i++) {
-            if (list[i].duration != NULL) {
+        int i;
+        for(i = 0; i < 16; i++) {
+            if (list[i].duration != 0) {
                 if (((x - list[i].x)^2 - (y - list[i].y)^2) <= (2*MOLERADIUS)^2) {
                     return false;
                 }
@@ -100,8 +103,9 @@ bool checkNoOverlap(int16_t x, int16_t y) {
 
 void decrementDurations() {
     
-    for(int i = 0; i < 16; i++) {
-        if (list[i].duration != NULL) {
+    int i;
+    for(i = 0; i < 16; i++) {
+        if (list[i].duration != 0) {
             list[i].duration = list[i].duration - 1;
         }
     }
@@ -110,8 +114,9 @@ void decrementDurations() {
 bool checkDurations() {
     
     bool missedMole = false;
-    for(int i = 0; i < 16; i++) {
-        if (list[i].duration == 0) {
+    int i;
+    for(i = 0; i < 16; i++) {
+        if (list[i].duration == 1) {
             missedMole = true;
             removeMole(list[i]);
         }
@@ -121,8 +126,9 @@ bool checkDurations() {
 
 bool checkIfTouched(int16_t x, int16_t y) {
     
-    for(int i = 0; i < 16; i++) {
-        if (list[i].duration != NULL) {
+    int i;
+    for(i = 0; i < 16; i++) {
+        if (list[i].duration != 0) {
             if (((x - list[i].x)^2 - (y - list[i].y)^2) <= (MOLERADIUS+1)^2) {
                 removeMole(list[i]);
                 return true;
@@ -134,7 +140,8 @@ bool checkIfTouched(int16_t x, int16_t y) {
 
 void removeMole(struct mole * m) {
     
-    for(int i = 0; i < 16; i++) {
+    int i;
+    for(i = 0; i < 16; i++) {
         if (list[i].duration == m->duration && list[i].x == m->x && list[i].y == m->y) {
             //remove mole from the screen
             tft_fillCircle(m->x, m->y, MOLERADIUS, ILI9341_BLACK);
@@ -144,9 +151,9 @@ void removeMole(struct mole * m) {
             tft_fillCircle(m->x+(MOLERADIUS/3+1), m->y-(MOLERADIUS/3+1), MOLERADIUS/6, ILI9341_BLACK); //right eye
             tft_downArc(m->x, m->y+(3*MOLERADIUS/4), MOLERADIUS/2-2, MOLERADIUS/3-1, ILI9341_BLACK);
             //remove mole from the list
-            list[i].duration = NULL;
-            list[i].x        = NULL;
-            list[i].y        = NULL;
+            list[i].duration = 0;
+            list[i].x        = 0;
+            list[i].y        = 0;
         }
     }
 }
