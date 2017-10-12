@@ -131,11 +131,11 @@ bool checkDurations() {
     int i;
     for(i = 0; i < 16; i++) {
         if (list[i].duration == 1) {
-            missedMole = true;
             removeMole(&list[i]);
+            return true;
         }
     }
-    return missedMole;
+    return true;
 }
 
 bool checkIfTouched(int16_t x, int16_t y) {
