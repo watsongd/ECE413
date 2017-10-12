@@ -1,0 +1,5 @@
+Parallel_TFTLCD
+The files in this folder should be a drop in replacement for the equivalent files in the serial (SPI) TFT code.
+The one small exception is that setRotation is 180 degrees oposite the serial code, i.e., a tft_setRotation(3) in SPI is equivalent to tft_setRotation(1) with the parallel code.
+
+10-2-15 - Theoretically the tft_gfx files for either interface should be the same.  However, both the tft_gfx and tft_master contain rotation parameters.  This didn't seem to cause a problem with the serial interface, but causes problems in the parallel interface.  For simplicity the rotation parameter and functions in tft_gfx have been removed since they haven't proved beneficial beyond what the tft_master rotation provides.
