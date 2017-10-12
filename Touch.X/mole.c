@@ -59,11 +59,21 @@ void addMole(int16_t x, int16_t y, int16_t duration) {
             list[i].duration = duration + 1;
             list[i].y = y;
             list[i].x = x;
+            break;
         }
+                
+    }
+}
+void initArray(){
+    int i;
+    //add the mole to the array
+    for(i =0; i < 16; i++) {
+        list[i].duration = 0;
+        list[i].y = 0;
+        list[i].x = 0;
         
     }
 }
-
 int countMoles() {
     
     int count = 0;
@@ -152,11 +162,6 @@ void removeMole(struct mole * m) {
         if (list[i].duration == m->duration && list[i].x == m->x && list[i].y == m->y) {
             //remove mole from the screen
             tft_fillCircle(m->x, m->y, MOLERADIUS, ILI9341_BLACK);
-            tft_fillCircle(m->x, m->y+(MOLERADIUS/2-4), MOLERADIUS/2-2, ILI9341_BLACK);
-            tft_fillCircle(m->x, m->y, MOLERADIUS/6, ILI9341_BLACK);
-            tft_fillCircle(m->x-(MOLERADIUS/3+1), m->y-(MOLERADIUS/3+1), MOLERADIUS/6, ILI9341_BLACK); //left eye
-            tft_fillCircle(m->x+(MOLERADIUS/3+1), m->y-(MOLERADIUS/3+1), MOLERADIUS/6, ILI9341_BLACK); //right eye
-            tft_downArc(m->x, m->y+(3*MOLERADIUS/4), MOLERADIUS/2-2, MOLERADIUS/3-1, ILI9341_BLACK);
             //remove mole from the list
             list[i].duration = 0;
             list[i].x        = 0;

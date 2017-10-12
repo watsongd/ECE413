@@ -131,6 +131,7 @@ int main(int argc, char** argv) {
     char buffer2[30];
     SYSTEMConfigPerformance(PBCLK);
             
+    initArray();
     initTimers();
     INTEnableSystemMultiVectoredInt();
     
@@ -143,6 +144,8 @@ int main(int argc, char** argv) {
     tft_setRotation(1); 
     tft_fillScreen(ILI9341_BLACK);  
     addMole(30,30, 10000);
+    addMole(90, 30, 15000);
+    addMole(150,30, 15000);
     while(1){
         PT_SCHEDULE(protothread_game_ctr(&pt_game_ctr));
         
@@ -166,7 +169,7 @@ int main(int argc, char** argv) {
         tft_setTextColor(ILI9341_WHITE);
         sprintf(buffer,"x: %d, y: %d, z: %d", p.x, p.y, p.z);
         sprintf(buffer1,"x: %d, y: %d, rand: %d", xScale(p.x), yScale(p.y), random());
-        sprintf(buffer2,"Time: %d, POT1: %d", gameTime, readADC(BIT_15));
+        sprintf(buffer2,"Time: %d, MOLECOUNT: %d", gameTime, countMoles());
         tft_writeString(buffer);
         
         tft_setCursor(20, 120);

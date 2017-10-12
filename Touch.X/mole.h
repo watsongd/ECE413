@@ -28,6 +28,9 @@ struct mole {
 // array of moles
 struct mole list[16];
 
+
+void initArray();
+
 // check if the random x and y value overlap with a current mole and
 // check if the entire mole can draw a mole on the screen
 bool checkNoOverlap(int16_t x, int16_t y);
