@@ -14,6 +14,8 @@
 #include "TouchScreen.h"
 #include "tft_master.h"
 #include "tft_gfx.h"
+#include "pt_cornell_1_2.h"
+//#include "mole.h"
 
 
 #define XM AN0
@@ -22,6 +24,29 @@
 //.4 in fixed point 10.6
 #define xStep 0x0019
 #define yStep 0x0016
+
+struct TSPoint p;
+int misses, hits, maxMoles, moleDur;
+uint16_t time = 0;
+uint16_t gameTime = 0;
+
+static struct pt pt_game_ctr;
+        
+        
+static PT_THREAD (protothread_game_ctr(struct pt *pt))
+{
+    PT_BEGIN(pt);  
+    while(1) {
+        if (gameTime > 60){
+            tft_drawRect(100, 100, 120, 20, ILI9341_GREEN);
+        }
+        PT_YIELD_TIME_msec(1);
+        // NEVER exit while
+    } // END WHILE(1)
+    
+  PT_END(pt);
+} // keypad thread
+
 
 int xScale(int16_t xTouchScreen){
     uint16_t xScreenPos;
@@ -58,25 +83,32 @@ static uint32_t random()
     //y needs scaled by factor of .469
     return num;
 }
-uint16_t time = 0;
-uint16_t gameTime = 0;
+
+void updateUI(int );
+
 void __ISR(_TIMER_23_VECTOR, ipl2) T23Int(void){
     //Refresh code here. Runs at 60Hz
-//    time++;
-//    if (time = 60){
-//        gameTime++;
-//        time = 0;
+    time++;
+    if (time == 60){
+        gameTime++;
+        time = 0;
+    }
+    if(p.z>0) checkIfTouched(xScale(p.x), yScale(p.y));
+//    
+//    if (checkDurations()){
+//        misses++;
+//        addMole();
 //    }
+//    checkIfTouched(xScale(p.x), yScale(p.y));
+    
     mT23ClearIntFlag();
 }
     
 void __ISR(_TIMER_1_VECTOR, ipl2) T1Int(void){
     //Decrement Mole durations here. Runs at 1000Hz
-    time++;
-    if (time == 1000){
-        gameTime++;
-        time = 0;
-    }
+//    
+    decrementDurations(); 
+    checkDurations();
     mT1ClearIntFlag();
 }
 
@@ -85,32 +117,35 @@ void initTimers(void){
     // Configure T1 for ms count
     ConfigIntTimer1(T1_INT_ON | T1_INT_PRIOR_2);
     
-//      //refresh rate
-//    OpenTimer23(T23_ON | T23_SOURCE_INT | T23_32BIT_MODE_ON | T23_PS_1_1 , 666667);
-//    ConfigIntTimer23(T23_INT_ON | T23_INT_PRIOR_1);
+    //refresh rate
+    OpenTimer23(T23_ON | T23_SOURCE_INT | T23_32BIT_MODE_ON | T23_PS_1_1 , 666667);
+    ConfigIntTimer23(T23_INT_ON | T23_INT_PRIOR_1);
 }
 /*
  * 
  */
 int main(int argc, char** argv) {
+    mPORTBSetPinsAnalogIn(BIT_15);
     char buffer[30];
     char buffer1[30];
     char buffer2[30];
     SYSTEMConfigPerformance(PBCLK);
-    
+            
     initTimers();
+    INTEnableSystemMultiVectoredInt();
     
     configureADC();
+    PT_INIT(&pt_game_ctr);
     
     //initialize screen
     tft_init_hw();
     tft_begin();
     tft_setRotation(1); 
     tft_fillScreen(ILI9341_BLACK);  
-    
-
-    
+    addMole(30,30, 10000);
     while(1){
+        PT_SCHEDULE(protothread_game_ctr(&pt_game_ctr));
+        
         //tft_fillScreen(ILI9341_BLACK);
         tft_setCursor(20, 100);
         tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
@@ -121,9 +156,8 @@ int main(int argc, char** argv) {
         tft_setCursor(20, 120);
         tft_writeString(buffer1);
         tft_setCursor(20, 140);
-        tft_writeString(buffer1);
+        tft_writeString(buffer2);
         
-        struct TSPoint p;
         p.x = 0;
         p.y = 0;
         p.z = 0;
@@ -132,7 +166,7 @@ int main(int argc, char** argv) {
         tft_setTextColor(ILI9341_WHITE);
         sprintf(buffer,"x: %d, y: %d, z: %d", p.x, p.y, p.z);
         sprintf(buffer1,"x: %d, y: %d, rand: %d", xScale(p.x), yScale(p.y), random());
-        sprintf(buffer2,"Time: %d", gameTime);
+        sprintf(buffer2,"Time: %d, POT1: %d", gameTime, readADC(BIT_15));
         tft_writeString(buffer);
         
         tft_setCursor(20, 120);

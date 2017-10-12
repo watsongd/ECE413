@@ -89,8 +89,12 @@ bool checkNoOverlap(int16_t x, int16_t y) {
     if (countMoles() > 0) {
         int i;
         for(i = 0; i < 16; i++) {
+            
             if (list[i].duration != 0) {
-                if (((x - list[i].x)^2 - (y - list[i].y)^2) <= (2*MOLERADIUS)^2) {
+                int xTerm = (x - list[i].x)*(x - list[i].x);
+                int yTerm = (y - list[i].y)*(y - list[i].y);
+                int rTerm = (MOLERADIUS*2)*(MOLERADIUS*2);
+                if ((xTerm + yTerm) < rTerm){
                     return false;
                 }
             }
@@ -118,7 +122,7 @@ bool checkDurations() {
     for(i = 0; i < 16; i++) {
         if (list[i].duration == 1) {
             missedMole = true;
-            removeMole(list[i]);
+            removeMole(&list[i]);
         }
     }
     return missedMole;
@@ -129,8 +133,11 @@ bool checkIfTouched(int16_t x, int16_t y) {
     int i;
     for(i = 0; i < 16; i++) {
         if (list[i].duration != 0) {
-            if (((x - list[i].x)^2 - (y - list[i].y)^2) <= (MOLERADIUS+1)^2) {
-                removeMole(list[i]);
+            int xTerm = (x - list[i].x)*(x - list[i].x);
+            int yTerm = (y - list[i].y)*(y - list[i].y);
+            int rTerm = (MOLERADIUS+1)*(MOLERADIUS+1);
+            if ((xTerm + yTerm) < rTerm){
+                removeMole(&list[i]);
                 return true;
             }
         }
