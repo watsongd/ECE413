@@ -35,28 +35,28 @@ uint16_t gameTime = 0;
 bool changes;
 int touched;
 
-static struct pt pt_game_ctr;
-        
-        
-static PT_THREAD (protothread_game_ctr(struct pt *pt))
-{
-    PT_BEGIN(pt);  
-    while(1) {
-        if (gameTime > 60){
-            tft_drawRect(100, 100, 120, 20, ILI9341_GREEN);
-        }
-        PT_YIELD_TIME_msec(1);
-        // NEVER exit while
-    } // END WHILE(1)
-    
-  PT_END(pt);
-} // keypad thread
+//static struct pt pt_game_ctr;
+//        
+//        
+//static PT_THREAD (protothread_game_ctr(struct pt *pt))
+//{
+//    PT_BEGIN(pt);  
+//    while(1) {
+//        if (gameTime > 60){
+//            tft_drawRect(100, 100, 120, 20, ILI9341_GREEN);
+//        }
+//        PT_YIELD_TIME_msec(1);
+//        // NEVER exit while
+//    } // END WHILE(1)
+//    
+//  PT_END(pt);
+//} // keypad thread
 
-int checkDurationPot(){
-    mPORTBSetPinsAnalogIn(BIT_13);
-    int moleDur = readADC(11);
-    return moleDur;
-}
+//int checkDurationPot(){
+//    mPORTBSetPinsAnalogIn(BIT_13);
+//    int moleDur = readADC(11);
+//    return moleDur;
+//}
 
 int xScale(int16_t xTouchScreen){
     uint16_t xScreenPos;
@@ -94,6 +94,7 @@ static uint32_t random()
     return num;
 }
 char stats[30];
+
 void updateUI(){
     if (changes == true){
         tft_setCursor(20, 5);
@@ -127,14 +128,7 @@ void __ISR(_TIMER_23_VECTOR, ipl2) T23Int(void){
             changes = true;
         }
     }
-    
     if(p.z==0) touched = 0;
-    
-    if (checkDurations() == true){
-        changes = true;
-        misses++;
-        //addMole(100, 100, 10000);
-    }
     
     updateUI();
     mT23ClearIntFlag();
@@ -143,8 +137,13 @@ void __ISR(_TIMER_23_VECTOR, ipl2) T23Int(void){
 void __ISR(_TIMER_1_VECTOR, ipl2) T1Int(void){
     //Decrement Mole durations here. Runs at 1000Hz
 //    
-    decrementDurations(); 
-    checkDurations();
+    decrementDurations();
+    //for moles timing out
+    if (checkDurations() == true){
+        changes = true;
+        misses++;
+        //addMole(100, 100, 10000);
+    }
     mT1ClearIntFlag();
 }
 
@@ -161,12 +160,12 @@ void initTimers(void){
  * 
  */
 int main(int argc, char** argv) {
-    mPORTBSetPinsAnalogIn(BIT_15);
-    mPORTBSetPinsAnalogIn(BIT_13);
-//    char buffer[30];
-//    char buffer1[30];
-//    char buffer2[30];
-//    char buffer3[30];
+//    mPORTBSetPinsAnalogIn(BIT_15);
+//    mPORTBSetPinsAnalogIn(BIT_13);
+    char buffer[30];
+    char buffer1[30];
+    char buffer2[30];
+    char buffer3[30];
     SYSTEMConfigPerformance(PBCLK);
             
     initArray();
@@ -174,7 +173,7 @@ int main(int argc, char** argv) {
     INTEnableSystemMultiVectoredInt();
     
     configureADC();
-    PT_INIT(&pt_game_ctr);
+    //PT_INIT(&pt_game_ctr);
     
     //initialize screen
     tft_init_hw();
@@ -185,7 +184,7 @@ int main(int argc, char** argv) {
     addMole(90, 30, 15000);
     addMole(150,30, 15000);
     while(1){
-        PT_SCHEDULE(protothread_game_ctr(&pt_game_ctr));
+        //PT_SCHEDULE(protothread_game_ctr(&pt_game_ctr));
         
 //        //tft_fillScreen(ILI9341_BLACK);
 //        tft_setCursor(20, 100);
@@ -210,7 +209,7 @@ int main(int argc, char** argv) {
 //        sprintf(buffer,"x: %d, y: %d, z: %d", p.x, p.y, p.z);
 //        sprintf(buffer1,"x: %d, y: %d, rand: %d", xScale(p.x), yScale(p.y), random());
 //        sprintf(buffer2,"Time: %d, MOLECOUNT: %d", gameTime, countMoles());
-//        sprintf(buffer3,"POT1: %d, POT2: %d", checkDurationPot(), countMoles());
+//        //sprintf(buffer3,"POT1: %d, POT2: %d", checkDurationPot(), countMoles());
 //        tft_writeString(buffer);
 //        
 //        tft_setCursor(20, 120);
@@ -230,4 +229,3 @@ int main(int argc, char** argv) {
     
     return (EXIT_SUCCESS);
 }
-
