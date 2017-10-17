@@ -60,8 +60,7 @@ void addMole(int16_t x, int16_t y, int16_t duration) {
             list[i].y = y;
             list[i].x = x;
             break;
-        }
-                
+        }    
     }
 }
 void initArray(){

@@ -34,6 +34,8 @@ uint16_t gameTime = 0;
 bool changes;
 int touched;
 int onMenu = 1;
+int molesOnScreen = 5;
+int moleDuration = 500;//duration in milliseconds
 
 static struct pt pt_game_ctr;
         
@@ -76,9 +78,6 @@ static PT_THREAD (protothread_game_ctr(struct pt *pt))
             if ((p.z > 0) & (xScale(p.x) > 100) & (xScale(p.x) < 220) & (yScale(p.y) > 100) & (yScale(p.y) < 160)){
                 onMenu = 0;
                 tft_fillRect(100, 100, 120, 60, ILI9341_BLACK);
-                addMole(30,30, 10000);
-                addMole(90, 30, 15000);
-                addMole(150,30, 15000);
             }
         }
         if (gameTime > 60) {
@@ -160,8 +159,17 @@ void __ISR(_TIMER_1_VECTOR, ipl2) T1Int(void){
         if (checkDurations() == true){
             changes = true;
             misses++;
-            //addMole(100, 100, 10000);
-        }  
+        }
+//        while (countMoles() < molesOnScreen) {
+//            int xCoord = random();
+//            int yCoord = random();
+//            
+//            while (checkNoOverlap(xCoord, yCoord) == 0) {
+//                xCoord = random();
+//                yCoord = random();
+//            }
+//            addMole(xCoord, yCoord, moleDuration);
+//        }
     }
     mT1ClearIntFlag();
 }
