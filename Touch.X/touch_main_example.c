@@ -16,7 +16,6 @@
 #include "tft_gfx.h"
 #include "pt_cornell_1_2.h"
 #include "stdbool.h"
-
 #include "mole.h"
 
 
