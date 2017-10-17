@@ -26,6 +26,9 @@
 #define xStep 0x0019
 #define yStep 0x0016
 
+#define randomXscale 0x0028
+#define randomYscale 0x001e
+
 struct TSPoint p;
 int misses, hits, maxMoles, moleDur;
 int prev_misses, prev_hits;
@@ -35,7 +38,7 @@ bool changes;
 int touched;
 int onMenu = 1;
 int molesOnScreen = 5;
-int moleDuration = 500;//duration in milliseconds
+int moleDuration = 5000;//duration in milliseconds
 
 static struct pt pt_game_ctr;
         
@@ -65,36 +68,9 @@ int yScale(int16_t yTouchScreen){
     return yScreenPos;
 }
 
-static PT_THREAD (protothread_game_ctr(struct pt *pt))
-{
-    PT_BEGIN(pt);  
-    while(1) {
-        if (onMenu == 1){
-            tft_fillRect(100, 100, 120, 60, ILI9341_GREEN);
-            p.x = 0;
-            p.y = 0;
-            p.z = 0;
-            getPoint(&p);
-            if ((p.z > 0) & (xScale(p.x) > 100) & (xScale(p.x) < 220) & (yScale(p.y) > 100) & (yScale(p.y) < 160)){
-                onMenu = 0;
-                tft_fillRect(100, 100, 120, 60, ILI9341_BLACK);
-            }
-        }
-        if (gameTime > 60) {
-            removeAllMoles();
-            onMenu = 1;
-            gameTime = 0;
-        }
-        updateUI();
-        //PT_YIELD_TIME_msec(1);
-        // NEVER exit while
-    } // END WHILE(1)
-    
-  PT_END(pt);
-} // keypad thread
-
 uint32_t seed = 7;
 uint16_t num;
+char stats[30];
 
 //Returns a number 0-512
 static uint32_t random()
@@ -108,8 +84,6 @@ static uint32_t random()
     //y needs scaled by factor of .469
     return num;
 }
-char stats[30];
-
 void updateUI(){
     if (changes == true){
         tft_setCursor(20, 5);
@@ -126,6 +100,48 @@ void updateUI(){
         changes = false;
     }
 }
+
+static PT_THREAD (protothread_game_ctr(struct pt *pt))
+{
+    PT_BEGIN(pt);  
+    while(1) {
+        if (onMenu == 1){
+            tft_fillRect(100, 100, 120, 60, ILI9341_GREEN);
+            p.x = 0;
+            p.y = 0;
+            p.z = 0;
+            getPoint(&p);
+            if ((p.z > 0) & (xScale(p.x) > 100) & (xScale(p.x) < 220) & (yScale(p.y) > 100) & (yScale(p.y) < 160)){
+                onMenu = 0;
+                tft_fillRect(100, 100, 120, 60, ILI9341_BLACK);
+                while (countMoles() < molesOnScreen) {
+                    int xCoord = ((random()*randomXscale)>>6)&0x03ff; //x needs scaled by factor of .625
+                    int yCoord = ((random()*randomYscale)>>6)&0x03ff; //y needs scaled by factor of .469
+
+                    while (checkOverlap(xCoord, yCoord) == true) {
+                        xCoord = ((random()*randomXscale)>>6)&0x03ff;
+                        yCoord = ((random()*randomYscale)>>6)&0x03ff;
+                    }
+                    addMole(xCoord, yCoord, moleDuration);
+                }
+            }
+        }
+        if (gameTime >= 60) {
+            removeAllMoles();
+            onMenu = 1;
+            gameTime = 0;
+            updateUI();
+        }
+        //PT_YIELD_TIME_msec(1);
+        // NEVER exit while
+    } // END WHILE(1)
+    
+  PT_END(pt);
+} // keypad thread
+
+
+
+
 
 void __ISR(_TIMER_23_VECTOR, ipl2) T23Int(void){
     //Refresh code here. Runs at 60Hz
@@ -145,7 +161,15 @@ void __ISR(_TIMER_23_VECTOR, ipl2) T23Int(void){
             }
         }
         if(p.z==0) touched = 0;
-
+        
+        if (countMoles() < molesOnScreen) {
+            int xCoord = ((random()*randomXscale)>>6)&0x03ff; //x needs scaled by factor of .625
+            int yCoord = ((random()*randomYscale)>>6)&0x03ff; //y needs scaled by factor of .469
+            
+            if (!checkOverlap(xCoord, yCoord)) {
+                addMole(xCoord, yCoord, moleDuration);
+            }
+        }
         updateUI();
     }
     mT23ClearIntFlag();
@@ -160,16 +184,6 @@ void __ISR(_TIMER_1_VECTOR, ipl2) T1Int(void){
             changes = true;
             misses++;
         }
-//        while (countMoles() < molesOnScreen) {
-//            int xCoord = random();
-//            int yCoord = random();
-//            
-//            while (checkNoOverlap(xCoord, yCoord) == 0) {
-//                xCoord = random();
-//                yCoord = random();
-//            }
-//            addMole(xCoord, yCoord, moleDuration);
-//        }
     }
     mT1ClearIntFlag();
 }

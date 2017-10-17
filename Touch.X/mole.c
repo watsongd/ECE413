@@ -85,32 +85,32 @@ int countMoles() {
     return count;
 }
 
-bool checkNoOverlap(int16_t x, int16_t y) {
+bool checkOverlap(int16_t x, int16_t y) {
     
     //First, make sure the entire mole can be drawn on the screen
-    if (x < MOLERADIUS+1 || x > x-MOLERADIUS+1 ) {
-        return false;
+    if ((x < MOLERADIUS+1) | (x > 320-MOLERADIUS+1)) {
+        return true;
     }
-    if (y < MOLERADIUS+1 || y > y-MOLERADIUS+1 ) {
-        return false;
+    if ((y < MOLERADIUS+1) | (y > 240-MOLERADIUS+1)) {
+        return true;
     }
     //Next, check that it doesn't overlap with the other moles
     if (countMoles() > 0) {
         int i;
         for(i = 0; i < 16; i++) {
             
-            if (list[i].duration != 0) {
+            if (list[i].duration != 1) {
                 int xTerm = (x - list[i].x)*(x - list[i].x);
                 int yTerm = (y - list[i].y)*(y - list[i].y);
                 int rTerm = (MOLERADIUS*2)*(MOLERADIUS*2);
-                if ((xTerm + yTerm) < rTerm){
-                    return false;
+                if ((xTerm + yTerm) <= rTerm){
+                    return true;
                 }
             }
         }
     }
     else {
-        return true;
+        return false;
     }
 }
 
@@ -172,11 +172,13 @@ void removeAllMoles() {
     
     int i;
     for(i = 0; i < 16; i++) {
-        //remove mole from the screen
-        tft_fillCircle(list[i].x, list[i].y, MOLERADIUS, ILI9341_BLACK);
-        //remove mole from the list
-        list[i].duration = 0;
-        list[i].x        = 0;
-        list[i].y        = 0;
+        removeMole(&list[i]);
     }
 }
+
+//        //remove mole from the screen
+//        tft_fillCircle(list[i].x, list[i].y, MOLERADIUS, ILI9341_BLACK);
+//        //remove mole from the list
+//        list[i].duration = 0;
+//        list[i].x        = 0;
+//        list[i].y        = 0;

@@ -33,7 +33,7 @@ void initArray();
 
 // check if the random x and y value overlap with a current mole and
 // check if the entire mole can draw a mole on the screen
-bool checkNoOverlap(int16_t x, int16_t y);
+bool checkOverlap(int16_t x, int16_t y);
 
 // add a mole to screen (assuming that overlap is already dealt with)
 void addMole(int16_t x0, int16_t y0, int16_t duration);
