@@ -127,15 +127,14 @@ void decrementDurations() {
 
 bool checkDurations() {
     
-    bool missedMole = false;
     int i;
     for(i = 0; i < 16; i++) {
         if (list[i].duration == 1) {
-            missedMole = true;
             removeMole(&list[i]);
+            return true;
         }
     }
-    return missedMole;
+    return false;
 }
 
 bool checkIfTouched(int16_t x, int16_t y) {
