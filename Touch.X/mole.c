@@ -168,3 +168,16 @@ void removeMole(struct mole * m) {
         }
     }
 }
+
+void removeAllMoles() {
+    
+    int i;
+    for(i = 0; i < 16; i++) {
+        //remove mole from the screen
+        tft_fillCircle(list[i].x, list[i].y, MOLERADIUS, ILI9341_BLACK);
+        //remove mole from the list
+        list[i].duration = 0;
+        list[i].x        = 0;
+        list[i].y        = 0;
+    }
+}

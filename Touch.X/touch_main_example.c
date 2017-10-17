@@ -34,24 +34,10 @@ uint16_t time = 0;
 uint16_t gameTime = 0;
 bool changes;
 int touched;
+int onMenu = 1;
 
-//static struct pt pt_game_ctr;
-//        
-//        
-//static PT_THREAD (protothread_game_ctr(struct pt *pt))
-//{
-//    PT_BEGIN(pt);  
-//    while(1) {
-//        if (gameTime > 60){
-//            tft_drawRect(100, 100, 120, 20, ILI9341_GREEN);
-//        }
-//        PT_YIELD_TIME_msec(1);
-//        // NEVER exit while
-//    } // END WHILE(1)
-//    
-//  PT_END(pt);
-//} // keypad thread
-
+static struct pt pt_game_ctr;
+        
 //int checkDurationPot(){
 //    mPORTBSetPinsAnalogIn(BIT_13);
 //    int moleDur = readADC(11);
@@ -77,6 +63,37 @@ int yScale(int16_t yTouchScreen){
     yScreenPos = (yScreenPos>>6)&0x03ff;
     return yScreenPos;
 }
+
+static PT_THREAD (protothread_game_ctr(struct pt *pt))
+{
+    PT_BEGIN(pt);  
+    while(1) {
+        if (onMenu == 1){
+            tft_fillRect(100, 100, 120, 60, ILI9341_GREEN);
+            p.x = 0;
+            p.y = 0;
+            p.z = 0;
+            getPoint(&p);
+            if ((p.z > 0) & (xScale(p.x) > 100) & (xScale(p.x) < 220) & (yScale(p.y) > 100) & (yScale(p.y) < 160)){
+                onMenu = 0;
+                tft_fillRect(100, 100, 120, 60, ILI9341_BLACK);
+                addMole(30,30, 10000);
+                addMole(90, 30, 15000);
+                addMole(150,30, 15000);
+            }
+        }
+        if (gameTime > 60) {
+            removeAllMoles();
+            onMenu = 1;
+            gameTime = 0;
+        }
+        updateUI();
+        //PT_YIELD_TIME_msec(1);
+        // NEVER exit while
+    } // END WHILE(1)
+    
+  PT_END(pt);
+} // keypad thread
 
 uint32_t seed = 7;
 uint16_t num;
@@ -114,35 +131,38 @@ void updateUI(){
 
 void __ISR(_TIMER_23_VECTOR, ipl2) T23Int(void){
     //Refresh code here. Runs at 60Hz
-    getPoint(&p);
-    time++;
-    if (time == 60){
-        gameTime++;
-        time = 0;
-        changes = true;
-    }
-    if(p.z>0 && touched == 0) {
-        touched = 1;
-        if (checkIfTouched(xScale(p.x), yScale(p.y))) {
-            hits++;
+    if (onMenu == 0) {
+        getPoint(&p);
+        time++;
+        if (time == 60){
+            gameTime++;
+            time = 0;
             changes = true;
         }
+        if(p.z>0 && touched == 0) {
+            touched = 1;
+            if (checkIfTouched(xScale(p.x), yScale(p.y))) {
+                hits++;
+                changes = true;
+            }
+        }
+        if(p.z==0) touched = 0;
+
+        updateUI();
     }
-    if(p.z==0) touched = 0;
-    
-    updateUI();
     mT23ClearIntFlag();
 }
     
 void __ISR(_TIMER_1_VECTOR, ipl2) T1Int(void){
     //Decrement Mole durations here. Runs at 1000Hz
-//    
-    decrementDurations();
-    //for moles timing out
-    if (checkDurations() == true){
-        changes = true;
-        misses++;
-        //addMole(100, 100, 10000);
+    if (onMenu == 0) {
+        decrementDurations();
+        //for moles timing out
+        if (checkDurations() == true){
+            changes = true;
+            misses++;
+            //addMole(100, 100, 10000);
+        }  
     }
     mT1ClearIntFlag();
 }
@@ -173,53 +193,51 @@ int main(int argc, char** argv) {
     INTEnableSystemMultiVectoredInt();
     
     configureADC();
-    //PT_INIT(&pt_game_ctr);
+    PT_INIT(&pt_game_ctr);
     
     //initialize screen
     tft_init_hw();
     tft_begin();
     tft_setRotation(1); 
     tft_fillScreen(ILI9341_BLACK);  
-    addMole(30,30, 10000);
-    addMole(90, 30, 15000);
-    addMole(150,30, 15000);
+
     while(1){
-        //PT_SCHEDULE(protothread_game_ctr(&pt_game_ctr));
-        
-//        //tft_fillScreen(ILI9341_BLACK);
-//        tft_setCursor(20, 100);
-//        tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
-//
-//        //erase old text
-//        tft_setTextColor(ILI9341_BLACK);
-//        tft_writeString(buffer);
-//        tft_setCursor(20, 120);
-//        tft_writeString(buffer1);
-//        tft_setCursor(20, 140);
-//        tft_writeString(buffer2);
-//        tft_setCursor(20, 160);
+        PT_SCHEDULE(protothread_game_ctr(&pt_game_ctr));
+
+        //tft_fillScreen(ILI9341_BLACK);
+        tft_setCursor(0, 0);
+        tft_setTextColor(ILI9341_WHITE); tft_setTextSize(1);
+
+        //erase old text
+        tft_setTextColor(ILI9341_BLACK);
+        tft_writeString(buffer);
+        tft_setCursor(0, 20);
+        tft_writeString(buffer1);
+        tft_setCursor(0, 40);
+        tft_writeString(buffer2);
+//        tft_setCursor(0, 40);
 //        tft_writeString(buffer3);
-//        
-//        p.x = 0;
-//        p.y = 0;
-//        p.z = 0;
-//        getPoint(&p);
-//        tft_setCursor(20, 100);
-//        tft_setTextColor(ILI9341_WHITE);
-//        sprintf(buffer,"x: %d, y: %d, z: %d", p.x, p.y, p.z);
-//        sprintf(buffer1,"x: %d, y: %d, rand: %d", xScale(p.x), yScale(p.y), random());
-//        sprintf(buffer2,"Time: %d, MOLECOUNT: %d", gameTime, countMoles());
-//        //sprintf(buffer3,"POT1: %d, POT2: %d", checkDurationPot(), countMoles());
-//        tft_writeString(buffer);
-//        
-//        tft_setCursor(20, 120);
-//        tft_setTextColor(ILI9341_WHITE);
-//        tft_writeString(buffer1);
-//        
-//        tft_setCursor(20, 140);
-//        tft_setTextColor(ILI9341_WHITE);
-//        tft_writeString(buffer2);
-//        
+        
+        p.x = 0;
+        p.y = 0;
+        p.z = 0;
+        getPoint(&p);
+        tft_setCursor(0, 0);
+        tft_setTextColor(ILI9341_WHITE);
+        sprintf(buffer,"x: %d, y: %d, z: %d", p.x, p.y, p.z);
+        sprintf(buffer1,"x: %d, y: %d, rand: %d", xScale(p.x), yScale(p.y), random());
+        sprintf(buffer2,"Time: %d, MOLECOUNT: %d", gameTime, countMoles());
+        //sprintf(buffer3,"POT1: %d, POT2: %d", checkDurationPot(), countMoles());
+        tft_writeString(buffer);
+        
+        tft_setCursor(0, 20);
+        tft_setTextColor(ILI9341_WHITE);
+        tft_writeString(buffer1);
+        
+        tft_setCursor(0, 40);
+        tft_setTextColor(ILI9341_WHITE);
+        tft_writeString(buffer2);
+        
 //        tft_setCursor(20, 160);
 //        tft_setTextColor(ILI9341_WHITE);
 //        tft_writeString(buffer3);

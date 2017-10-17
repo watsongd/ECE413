@@ -58,6 +58,9 @@ bool checkIfTouched(int16_t x, int16_t y);
 // Professor Watkin's down arc code for the frown on the mole
 void tft_downArc(short x0, short y0, short r, short w, unsigned short color);
 
+// black out all of the moles on the screen
+void removeAllMoles();
+
 
 #endif	/* MOLE_H */
 
