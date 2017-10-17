@@ -134,7 +134,7 @@ bool checkDurations() {
             return true;
         }
     }
-    return false;
+    return true;
 }
 
 bool checkIfTouched(int16_t x, int16_t y) {

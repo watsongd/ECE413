@@ -15,8 +15,9 @@
 #include "tft_master.h"
 #include "tft_gfx.h"
 #include "pt_cornell_1_2.h"
-#include "mole.h"
 #include "stdbool.h"
+
+#include "mole.h"
 
 
 #define XM AN0
@@ -55,7 +56,7 @@ int checkDurationPot(){
     mPORTBSetPinsAnalogIn(BIT_13);
     int moleDur = readADC(11);
     return moleDur;
- }
+}
 
 int xScale(int16_t xTouchScreen){
     uint16_t xScreenPos;
@@ -99,15 +100,16 @@ void updateUI(){
         tft_setTextSize(1);
         //erase old text
         tft_setTextColor(ILI9341_BLACK);
-        tft_writeString(stats);         
+        tft_writeString(stats);
+        
         //Draw new stats
         tft_setCursor(20, 5);
         tft_setTextColor(ILI9341_WHITE); tft_setTextSize(1);
         sprintf(stats,"Time: %d, Hits: %d, Misses: %d", gameTime, hits, misses);
         tft_writeString(stats);
         changes = false;
-     }
- }
+    }
+}
 
 void __ISR(_TIMER_23_VECTOR, ipl2) T23Int(void){
     //Refresh code here. Runs at 60Hz
@@ -118,7 +120,7 @@ void __ISR(_TIMER_23_VECTOR, ipl2) T23Int(void){
         time = 0;
         changes = true;
     }
-   if(p.z>0 && touched == 0) {
+    if(p.z>0 && touched == 0) {
         touched = 1;
         if (checkIfTouched(xScale(p.x), yScale(p.y))) {
             hits++;
@@ -160,9 +162,11 @@ void initTimers(void){
  */
 int main(int argc, char** argv) {
     mPORTBSetPinsAnalogIn(BIT_15);
-    char buffer[30];
-    char buffer1[30];
-    char buffer2[30];
+    mPORTBSetPinsAnalogIn(BIT_13);
+//    char buffer[30];
+//    char buffer1[30];
+//    char buffer2[30];
+//    char buffer3[30];
     SYSTEMConfigPerformance(PBCLK);
             
     initArray();
@@ -183,7 +187,7 @@ int main(int argc, char** argv) {
     while(1){
         PT_SCHEDULE(protothread_game_ctr(&pt_game_ctr));
         
-        //tft_fillScreen(ILI9341_BLACK);
+//        //tft_fillScreen(ILI9341_BLACK);
 //        tft_setCursor(20, 100);
 //        tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
 //
@@ -194,6 +198,8 @@ int main(int argc, char** argv) {
 //        tft_writeString(buffer1);
 //        tft_setCursor(20, 140);
 //        tft_writeString(buffer2);
+//        tft_setCursor(20, 160);
+//        tft_writeString(buffer3);
 //        
 //        p.x = 0;
 //        p.y = 0;
@@ -204,6 +210,7 @@ int main(int argc, char** argv) {
 //        sprintf(buffer,"x: %d, y: %d, z: %d", p.x, p.y, p.z);
 //        sprintf(buffer1,"x: %d, y: %d, rand: %d", xScale(p.x), yScale(p.y), random());
 //        sprintf(buffer2,"Time: %d, MOLECOUNT: %d", gameTime, countMoles());
+//        sprintf(buffer3,"POT1: %d, POT2: %d", checkDurationPot(), countMoles());
 //        tft_writeString(buffer);
 //        
 //        tft_setCursor(20, 120);
@@ -213,6 +220,10 @@ int main(int argc, char** argv) {
 //        tft_setCursor(20, 140);
 //        tft_setTextColor(ILI9341_WHITE);
 //        tft_writeString(buffer2);
+//        
+//        tft_setCursor(20, 160);
+//        tft_setTextColor(ILI9341_WHITE);
+//        tft_writeString(buffer3);
         
         delay_ms(100);
     }
