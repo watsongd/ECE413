@@ -91,7 +91,7 @@ bool checkOverlap(int16_t x, int16_t y) {
     if ((x < MOLERADIUS+1) | (x > 320-MOLERADIUS+1)) {
         return true;
     }
-    if ((y < MOLERADIUS+1) | (y > 240-MOLERADIUS+1)) {
+    if ((y < MOLERADIUS+1+15) | (y > 240-MOLERADIUS+1)) {
         return true;
     }
     //Next, check that it doesn't overlap with the other moles

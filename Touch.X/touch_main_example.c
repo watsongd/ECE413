@@ -18,13 +18,12 @@
 #include "stdbool.h"
 #include "mole.h"
 
-
-#define XM AN0
-#define YP AN1
-
 //.4 in fixed point 10.6
 #define xStep 0x0019
 #define yStep 0x0016
+
+#define moleNumStep 0x0001
+#define moleDurStep 0x013A
 
 #define randomXscale 0x0028
 #define randomYscale 0x001e
@@ -42,11 +41,23 @@ int moleDuration = 5000;//duration in milliseconds
 
 static struct pt pt_game_ctr;
         
-//int checkDurationPot(){
-//    mPORTBSetPinsAnalogIn(BIT_13);
-//    int moleDur = readADC(11);
-//    return moleDur;
-//}
+int checkDurPot(){
+    uint16_t moleDur;
+     //Scale from 10-1017 to 350-5000
+    moleDur = readADC(11)*moleDurStep;
+    moleDur = (moleDur>>6)&0x03ff;
+    //int moleMax = readADC(9);
+    return moleDur;
+}
+
+int checkMaxNumPot(){
+    uint16_t moleMax;
+    //Scale from 10-1017 to 1-16
+    moleMax = (readADC(9) - 10)*moleNumStep;
+    moleMax = (moleMax>>6)&0x03ff;
+    //int moleMax = readADC(9);
+    return moleMax + 1;
+}
 
 int xScale(int16_t xTouchScreen){
     uint16_t xScreenPos;
@@ -70,7 +81,6 @@ int yScale(int16_t yTouchScreen){
 
 uint32_t seed = 7;
 uint16_t num;
-char stats[30];
 
 //Returns a number 0-512
 static uint32_t random()
@@ -84,19 +94,30 @@ static uint32_t random()
     //y needs scaled by factor of .469
     return num;
 }
+
+char stats1[30];
+char stats2[30];
+
 void updateUI(){
     if (changes == true){
         tft_setCursor(20, 5);
         tft_setTextSize(1);
         //erase old text
         tft_setTextColor(ILI9341_BLACK);
-        tft_writeString(stats);
+        tft_writeString(stats1);
+        
+        tft_setCursor(20, 15);
+        tft_writeString(stats2);
         
         //Draw new stats
         tft_setCursor(20, 5);
         tft_setTextColor(ILI9341_WHITE); tft_setTextSize(1);
-        sprintf(stats,"Time: %d, Hits: %d, Misses: %d", gameTime, hits, misses);
-        tft_writeString(stats);
+        sprintf(stats1,"Time: %d, Hits: %d, Misses: %d", gameTime, hits, misses);
+        sprintf(stats2,"Max Num: %d" , checkMaxNumPot());
+        tft_writeString(stats1);
+        
+        tft_setCursor(20, 15);
+        tft_writeString(stats2);
         changes = false;
     }
 }
@@ -106,6 +127,11 @@ static PT_THREAD (protothread_game_ctr(struct pt *pt))
     PT_BEGIN(pt);  
     while(1) {
         if (onMenu == 1){
+            tft_setCursor(20, 5);
+            tft_setTextColor(ILI9341_WHITE); tft_setTextSize(1);
+            
+            tft_writeString("Hello Press the button to begin");
+            
             tft_fillRect(100, 100, 120, 60, ILI9341_GREEN);
             p.x = 0;
             p.y = 0;
@@ -113,8 +139,12 @@ static PT_THREAD (protothread_game_ctr(struct pt *pt))
             getPoint(&p);
             if ((p.z > 0) & (xScale(p.x) > 100) & (xScale(p.x) < 220) & (yScale(p.y) > 100) & (yScale(p.y) < 160)){
                 onMenu = 0;
+                tft_setCursor(20, 5);
+                tft_setTextColor(ILI9341_BLACK); tft_setTextSize(1);
+            
+                tft_writeString("Hello Press the button to begin");
                 tft_fillRect(100, 100, 120, 60, ILI9341_BLACK);
-                while (countMoles() < molesOnScreen) {
+                while (countMoles() < checkMaxNumPot()) {
                     int xCoord = ((random()*randomXscale)>>6)&0x03ff; //x needs scaled by factor of .625
                     int yCoord = ((random()*randomYscale)>>6)&0x03ff; //y needs scaled by factor of .469
 
@@ -128,9 +158,12 @@ static PT_THREAD (protothread_game_ctr(struct pt *pt))
         }
         if (gameTime >= 60) {
             removeAllMoles();
+            tft_fillScreen(ILI9341_BLACK); 
             onMenu = 1;
             gameTime = 0;
             updateUI();
+            hits = 0;
+            misses = 0;
         }
         //PT_YIELD_TIME_msec(1);
         // NEVER exit while
@@ -162,7 +195,7 @@ void __ISR(_TIMER_23_VECTOR, ipl2) T23Int(void){
         }
         if(p.z==0) touched = 0;
         
-        if (countMoles() < molesOnScreen) {
+        if (countMoles() < checkMaxNumPot()) {
             int xCoord = ((random()*randomXscale)>>6)&0x03ff; //x needs scaled by factor of .625
             int yCoord = ((random()*randomYscale)>>6)&0x03ff; //y needs scaled by factor of .469
             
@@ -201,8 +234,8 @@ void initTimers(void){
  * 
  */
 int main(int argc, char** argv) {
-//    mPORTBSetPinsAnalogIn(BIT_15);
-//    mPORTBSetPinsAnalogIn(BIT_13);
+    mPORTBSetPinsAnalogIn(BIT_15);
+    mPORTBSetPinsAnalogIn(BIT_13);
     char buffer[30];
     char buffer1[30];
     char buffer2[30];
@@ -225,43 +258,43 @@ int main(int argc, char** argv) {
     while(1){
         PT_SCHEDULE(protothread_game_ctr(&pt_game_ctr));
 
-        //tft_fillScreen(ILI9341_BLACK);
-        tft_setCursor(0, 0);
-        tft_setTextColor(ILI9341_WHITE); tft_setTextSize(1);
-
-        //erase old text
-        tft_setTextColor(ILI9341_BLACK);
-        tft_writeString(buffer);
-        tft_setCursor(0, 20);
-        tft_writeString(buffer1);
-        tft_setCursor(0, 40);
-        tft_writeString(buffer2);
+//        //tft_fillScreen(ILI9341_BLACK);
+//        tft_setCursor(0, 0);
+//        tft_setTextColor(ILI9341_WHITE); tft_setTextSize(1);
+//
+//        //erase old text
+//        tft_setTextColor(ILI9341_BLACK);
+//        tft_writeString(buffer);
+//        tft_setCursor(0, 20);
+//        tft_writeString(buffer1);
 //        tft_setCursor(0, 40);
-//        tft_writeString(buffer3);
-        
-        p.x = 0;
-        p.y = 0;
-        p.z = 0;
-        getPoint(&p);
-        tft_setCursor(0, 0);
-        tft_setTextColor(ILI9341_WHITE);
-        sprintf(buffer,"x: %d, y: %d, z: %d", p.x, p.y, p.z);
-        sprintf(buffer1,"x: %d, y: %d, rand: %d", xScale(p.x), yScale(p.y), random());
-        sprintf(buffer2,"Time: %d, MOLECOUNT: %d", gameTime, countMoles());
-        //sprintf(buffer3,"POT1: %d, POT2: %d", checkDurationPot(), countMoles());
-        tft_writeString(buffer);
-        
-        tft_setCursor(0, 20);
-        tft_setTextColor(ILI9341_WHITE);
-        tft_writeString(buffer1);
-        
-        tft_setCursor(0, 40);
-        tft_setTextColor(ILI9341_WHITE);
-        tft_writeString(buffer2);
-        
-//        tft_setCursor(20, 160);
+//        tft_writeString(buffer2);
+////        tft_setCursor(0, 40);
+////        tft_writeString(buffer3);
+//        
+//        p.x = 0;
+//        p.y = 0;
+//        p.z = 0;
+//        getPoint(&p);
+//        tft_setCursor(0, 0);
 //        tft_setTextColor(ILI9341_WHITE);
-//        tft_writeString(buffer3);
+//        sprintf(buffer,"x: %d, y: %d, z: %d", p.x, p.y, p.z);
+//        sprintf(buffer1,"x: %d, y: %d, rand: %d", xScale(p.x), yScale(p.y), random());
+//        sprintf(buffer2,"Time: %d, MOLECOUNT: %d", gameTime, countMoles());
+//        //sprintf(buffer3,"POT1: %d, POT2: %d", checkDurationPot(), countMoles());
+//        tft_writeString(buffer);
+//        
+//        tft_setCursor(0, 20);
+//        tft_setTextColor(ILI9341_WHITE);
+//        tft_writeString(buffer1);
+//        
+//        tft_setCursor(0, 40);
+//        tft_setTextColor(ILI9341_WHITE);
+//        tft_writeString(buffer2);
+//        
+////        tft_setCursor(20, 160);
+////        tft_setTextColor(ILI9341_WHITE);
+////        tft_writeString(buffer3);
         
         delay_ms(100);
     }
