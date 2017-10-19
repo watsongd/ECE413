@@ -1,0 +1,20 @@
+TFT LCD Touchscreen Readme
+getPoint sets the TSPoint pointer to the coordinates reported by the native touchscreen.
+These coordinates do not directly map to the pixel locations used for drawing on the LCD.
+The value will need to be converted to account for the different scale and potentially different
+orientation of the two pieces (touchscreen and LCD pixels)
+
+Basic usage
+
+configureADC();
+struct TSPoint p;
+p.x = 0;
+p.y = 0;
+p.z = 0;
+getPoint(&p);
+//use values of x, y, and z
+
+Example code
+To use example code will need to include relevant LCD drawing and graphics libraries
+
+**NOTE**: For this code to function correctly, the J3 jumper on the Microstick II needs to be disconnected.  You can place the jumper on just one of the pins so it does not get lost.
