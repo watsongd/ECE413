@@ -28,7 +28,6 @@ static PT_THREAD (protothread_game_ctr(struct pt *pt))
 
 void __ISR(_TIMER_23_VECTOR, ipl2) T23Int(void){
     //Refresh code here. Runs at 60Hz
-    counter++;
     mT23ClearIntFlag();
 }
     
@@ -45,17 +44,32 @@ void initTimers(void){
     OpenTimer23(T23_ON | T23_SOURCE_INT | T23_32BIT_MODE_ON | T23_PS_1_1 , 666667);
     ConfigIntTimer23(T23_INT_ON | T23_INT_PRIOR_1);
 }
+
+void capture_init(){
+    INTEnable(INT_IC1, INT_ENABLED);
+    INTSetVectorPriority(INT_INPUT_CAPTURE_1_VECTOR,
+            INT_PRIORITY_LEVEL_2);
+      // === setup system wide interrupts  ========
+    INTEnableSystemMultiVectoredInt();
+    
+}
 /*
  * 
  */
 int main(int argc, char** argv) {
-    char buffer[30];
-    char buffer1[30];
-    char buffer2[30];
-    char buffer3[30];
     SYSTEMConfigPerformance(PBCLK);
+    ANSELA = 0; ANSELB = 0; CM1CON = 0; CM2CON = 0;
+    //TRISB = 0x4000; //TRISA = 0x0020;
+    //CNPDB = 0x0780;
+  
+    //Comparator Output 
+    PPSOutput(1, RPA0, C2OUT);
+
+    //Input Capture Input
+    PPSInput(3, IC1, RPB13)
             
     initTimers();
+    capture_init();
     INTEnableSystemMultiVectoredInt();
     
     PT_INIT(&pt_game_ctr);
