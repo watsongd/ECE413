@@ -17,25 +17,53 @@
 
 
 int counter = 0;
-static struct pt pt_game_ctr;
+static struct pt pt_display, pt_input;
         
-static PT_THREAD (protothread_game_ctr(struct pt *pt))
+static PT_THREAD (protothread_input(struct pt *pt))
 {
     PT_BEGIN(pt);  
     while(1) {
+        PT_SPAWN(pt, &pt_input, PT_GetSerialBuffer(&pt_input) );
 
     } // END WHILE(1)
   PT_END(pt);
 } // keypad thread
 
-void __ISR(_TIMER_23_VECTOR, ipl2) T23Int(void){
-    //Refresh code here. Runs at 60Hz
-    mT23ClearIntFlag();
-}
-int t;
+char stats1[30];
+int desiredRPM = 0;
+int rtRPM = 0;
+
+static PT_THREAD (protothread_display(struct pt *pt))
+{
+    PT_BEGIN(pt);  
+    while(1) {
+        tft_setCursor(20, 5);
+        tft_setTextSize(1);
+        //erase old text
+        tft_setTextColor(ILI9341_BLACK);
+        tft_writeString(stats1);
+        
+        //Draw new stats
+        tft_setCursor(20, 5);
+        tft_setTextColor(ILI9341_WHITE); tft_setTextSize(1);
+        sprintf(stats1,"Desired RPM: %d, Real Time RPM: %d,", desiredRPM, rtRPM);
+        tft_writeString(stats1);
+        
+        PT_YIELD_TIME_msec(200);
+
+
+    } // END WHILE(1)
+  PT_END(pt);
+} // keypad thread
+
+int t = 0;
+int tprev, elapsedTime;
 //Interrupt ISR =================================================
 void __ISR(_INPUT_CAPTURE_1_VECTOR, ipl2soft) InputCapture1_Handler(void){
+    tprev = t;
     t = mIC1ReadCapture();
+    if (t > tprev)
+        elapsedTime = t - tprev;
     //clear the interrupt flag
     INTClearFlag(INT_IC1);
 }
@@ -65,19 +93,20 @@ int main(int argc, char** argv) {
     PPSOutput(1, RPA0, C2OUT);
 
     //Input Capture Input
-    PPSInput(3, IC1, RPB13)
+    PPSInput(3, IC1, RPB13);
     mPORTBSetPinsAnalogIn(BIT_3);
     
     // Enable Input Capture Module 1
-    OpenCapture1(IC_ON | IC_INT_1CAPTURE | IC_TIMER2_SRC | IC_EVERY_RISE_EDGE |
-                 IC_CAP_32BIT | IC_FEDGE_RISE);
+    OpenCapture1(IC_ON | IC_INT_1CAPTURE | IC_TIMER2_SRC | IC_EVERY_FALL_EDGE |
+                 IC_CAP_32BIT | IC_FEDGE_FALL);
     
     initTimers();
     capture_init();
 
     INTEnableSystemMultiVectoredInt();
     
-    PT_INIT(&pt_game_ctr);
+    //PT_INIT(&pt_input);
+    PT_INIT(&pt_display);
     
     //initialize screen
     tft_init_hw();
@@ -86,8 +115,8 @@ int main(int argc, char** argv) {
     tft_fillScreen(ILI9341_BLACK);  
 
     while(1){
-        PT_SCHEDULE(protothread_game_ctr(&pt_game_ctr));
-        delay_ms(100);
+        //PT_SCHEDULE(protothread_input(&pt_input));
+        PT_SCHEDULE(protothread_display(&pt_display));
     }
     
     return (EXIT_SUCCESS);
