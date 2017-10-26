@@ -11,6 +11,7 @@
       <itemPath>pin_magic.h</itemPath>
       <itemPath>tft_gfx.h</itemPath>
       <itemPath>tft_master.h</itemPath>
+      <itemPath>registers.h</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"

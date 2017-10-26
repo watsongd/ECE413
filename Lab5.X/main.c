@@ -13,6 +13,8 @@
 #include "tft_master.h"
 #include "tft_gfx.h"
 #include "pt_cornell_1_2.h"
+#include "registers.h"
+
 
 int counter = 0;
 static struct pt pt_game_ctr;
