@@ -30,20 +30,26 @@ void __ISR(_TIMER_23_VECTOR, ipl2) T23Int(void){
     //Refresh code here. Runs at 60Hz
     mT23ClearIntFlag();
 }
-    
-void __ISR(_TIMER_1_VECTOR, ipl2) T1Int(void){
-    mT1ClearIntFlag();
+int t;
+//Interrupt ISR =================================================
+void __ISR(_INPUT_CAPTURE_1_VECTOR, ipl2soft) InputCapture1_Handler(void){
+    t = mIC1ReadCapture();
+    //clear the interrupt flag
+    INTClearFlag(INT_IC1);
 }
 
 void initTimers(void){
-    OpenTimer1(T1_ON | T1_SOURCE_INT | T1_PS_1_1, 40000);
-    // Configure T1 for ms count
-    ConfigIntTimer1(T1_INT_ON | T1_INT_PRIOR_2);
-    
     //refresh rate
-    OpenTimer23(T23_ON | T23_SOURCE_INT | T23_32BIT_MODE_ON | T23_PS_1_1 , 666667);
+    OpenTimer23(T23_ON | T23_32BIT_MODE_ON | T23_PS_1_1 , 666667);
     ConfigIntTimer23(T23_INT_ON | T23_INT_PRIOR_1);
 }
+
+void capture_init(){
+    INTEnable(INT_IC1, INT_ENABLED);
+    INTSetVectorPriority(INT_INPUT_CAPTURE_1_VECTOR,
+                         INT_PRIORITY_LEVEL_2);
+}
+
 /*
  * 
  */
@@ -60,7 +66,13 @@ int main(int argc, char** argv) {
     PPSInput(3, IC1, RPB13)
     mPORTBSetPinsAnalogIn(BIT_3);
     
+    // Enable Input Capture Module 1
+    OpenCapture1(IC_ON | IC_INT_1CAPTURE | IC_TIMER2_SRC | IC_EVERY_RISE_EDGE |
+                 IC_CAP_32BIT | IC_FEDGE_RISE);
+    
     initTimers();
+    capture_init();
+
     INTEnableSystemMultiVectoredInt();
     
     PT_INIT(&pt_game_ctr);
