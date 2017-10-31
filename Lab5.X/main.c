@@ -31,6 +31,14 @@ static PT_THREAD (protothread_input(struct pt *pt))
 char stats1[30];
 int desiredRPM = 0;
 int currentRPM;
+int integral;
+int error;
+int last_error;
+int derivative;
+int kp;
+int ki;
+int kd;
+int pwm;
 int rtRPM = 0;
 int t = 0;
 int tprev, elapsedTime;
@@ -66,7 +74,18 @@ static PT_THREAD (protothread_controller(struct pt *pt))
         currentRPM = elapsedTime/40000000;
         
         //calculate how much correction is needed to reach the desired speed
-        int error = desiredRPM - currentRPM;
+        error = desiredRPM - currentRPM;
+        
+        //calculate the integral
+        integral = integral + error;
+        
+        //calculate the derivative
+        derivative = error - last_error;
+        
+        //calculate control variable
+        pwm = (kp*error) + (ki*integral) + (kd*derivative);
+        
+        last_error = error;
         PT_YIELD_TIME_msec(200);
     } // END WHILE(1)
   PT_END(pt);
