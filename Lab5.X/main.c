@@ -17,21 +17,23 @@
 
 
 int counter = 0;
-static struct pt pt_display, pt_input;
+static struct pt pt_display, pt_input, pt_controller;
         
 static PT_THREAD (protothread_input(struct pt *pt))
 {
     PT_BEGIN(pt);  
     while(1) {
         PT_SPAWN(pt, &pt_input, PT_GetSerialBuffer(&pt_input) );
-
     } // END WHILE(1)
   PT_END(pt);
 } // keypad thread
 
 char stats1[30];
 int desiredRPM = 0;
+int currentRPM;
 int rtRPM = 0;
+int t = 0;
+int tprev, elapsedTime;
 
 static PT_THREAD (protothread_display(struct pt *pt))
 {
@@ -54,10 +56,25 @@ static PT_THREAD (protothread_display(struct pt *pt))
 
     } // END WHILE(1)
   PT_END(pt);
-} // keypad thread
+} // display thread
 
-int t = 0;
-int tprev, elapsedTime;
+static PT_THREAD (protothread_controller(struct pt *pt))
+{
+    PT_BEGIN(pt);  
+    while(1) {
+        //from the IC, determine the current speed of the motor
+        currentRPM = elapsedTime/40000000;
+        
+        //calculate how much correction is needed to reach the desired speed
+        int error = desiredRPM - currentRPM;
+        PT_YIELD_TIME_msec(200);
+    } // END WHILE(1)
+  PT_END(pt);
+} // controller thread
+
+
+
+
 //Interrupt ISR =================================================
 void __ISR(_INPUT_CAPTURE_1_VECTOR, ipl2soft) InputCapture1_Handler(void){
     tprev = t;
@@ -70,7 +87,7 @@ void __ISR(_INPUT_CAPTURE_1_VECTOR, ipl2soft) InputCapture1_Handler(void){
 
 void initTimers(void){
     //refresh rate
-    OpenTimer23(T23_ON | T23_32BIT_MODE_ON | T23_PS_1_1 , 666667);
+    OpenTimer23(T23_ON | T23_32BIT_MODE_ON | T23_PS_1_1 , 0xffffffff);
     ConfigIntTimer23(T23_INT_ON | T23_INT_PRIOR_1);
 }
 
