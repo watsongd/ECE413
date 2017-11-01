@@ -19,9 +19,9 @@
 #define MAX_PWM         PBCLK/SAMPLE_RATE // eg 2667 at 15000hz.
 
 int counter = 0;
-static struct pt pt_display, pt_input, pt_controller;
+static struct pt pt_display, pt_input, pt_controller, pt_UART;
         
-static PT_THREAD (protothread_input(struct pt *pt))
+static PT_THREAD (protothread_UART(struct pt *pt))
 {
     PT_BEGIN(pt);  
     while(1) {
@@ -29,6 +29,7 @@ static PT_THREAD (protothread_input(struct pt *pt))
     } // END WHILE(1)
   PT_END(pt);
 } // keypad thread
+
 
 char stats1[30];
 int desiredRPM = 0;
@@ -65,7 +66,7 @@ static PT_THREAD (protothread_display(struct pt *pt))
         tft_writeString(stats1);
         
         PT_YIELD_TIME_msec(200);
-
+        
 
     } // END WHILE(1)
   PT_END(pt);
@@ -153,6 +154,15 @@ int main(int argc, char** argv) {
     OpenCapture1(IC_ON | IC_INT_1CAPTURE | IC_TIMER2_SRC | IC_EVERY_FALL_EDGE |
                  IC_CAP_32BIT | IC_FEDGE_FALL);
     
+    //PPSInput
+    PPSInput(2,U2RX, RPB11);
+    PPSOutput(4, RPB10, U2TX);
+    //UART Setup
+    UARTConfigure(UART2, UART_ENABLE_PINS_TX_RX_ONLY);;
+    UARTSetLineControl(UART2,UART_DATA_SIZE_8_BITS | UART_PARITY_NONE | UART_STOP_BITS_1);
+    UARTSetDataRate(UART2, PBCLK, 9600);
+    UARTEnable(UART2, UART_ENABLE_FLAGS | UART_PERIPHERAL | UART_RX | UART_TX);
+    
     initTimers();
     capture_init();
 
@@ -171,6 +181,7 @@ int main(int argc, char** argv) {
     
     //PT_INIT(&pt_input);
     PT_INIT(&pt_display);
+    PT_INIT(&pt_UART);
     
     //initialize screen
     tft_init_hw();
@@ -180,6 +191,7 @@ int main(int argc, char** argv) {
 
     while(1){
         //PT_SCHEDULE(protothread_input(&pt_input));
+        //PT_SCHEDULE(protothread_UART(&pt_UART));
         PT_SCHEDULE(protothread_display(&pt_display));
         // you send new values to PWMs  from here based on controller
         // via variables PWMOCRS & PWMOCR 
