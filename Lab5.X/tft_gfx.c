@@ -510,40 +510,40 @@ inline void tft_setTextWrap(char w) {
   wrap = w;
 }
 
-//inline unsigned char tft_getRotation(void) {
-///* Returns current roation of screen
-// *          0 = no rotation (0 degree rotation)
-// *          1 = rotate 90 degree clockwise
-// *          2 = rotate 180 degree
-// *          3 = rotate 90 degree anticlockwise
-// */
-//  return rotation;
-//}
+inline unsigned char tft_getRotation(void) {
+/* Returns current roation of screen
+ *          0 = no rotation (0 degree rotation)
+ *          1 = rotate 90 degree clockwise
+ *          2 = rotate 180 degree
+ *          3 = rotate 90 degree anticlockwise
+ */
+  return rotation;
+}
 
-//void tft_gfx_setRotation(unsigned char x) {
-///* Set display rotation in 90 degree steps
-// * Parameters:
-// *      x: dictate direction of rotation
-// *          0 = no rotation (0 degree rotation)
-// *          1 = rotate 90 degree clockwise
-// *          2 = rotate 180 degree
-// *          3 = rotate 90 degree anticlockwise
-// * Returns: Nothing
-// */
-//  rotation = (x & 3);
-//  switch(rotation) {
-//   case 0:
-//   case 2:
-//    _width  = ILI9341_TFTWIDTH;
-//    _height = ILI9341_TFTHEIGHT;
-//    break;
-//   case 1:
-//   case 3:
-//    _width  = ILI9341_TFTHEIGHT;;
-//    _height = ILI9341_TFTWIDTH;
-//    break;
-//  }
-//}
+void tft_gfx_setRotation(unsigned char x) {
+/* Set display rotation in 90 degree steps
+ * Parameters:
+ *      x: dictate direction of rotation
+ *          0 = no rotation (0 degree rotation)
+ *          1 = rotate 90 degree clockwise
+ *          2 = rotate 180 degree
+ *          3 = rotate 90 degree anticlockwise
+ * Returns: Nothing
+ */
+  rotation = (x & 3);
+  switch(rotation) {
+   case 0:
+   case 2:
+    _width  = ILI9341_TFTWIDTH;
+    _height = ILI9341_TFTHEIGHT;
+    break;
+   case 1:
+   case 3:
+    _width  = ILI9341_TFTHEIGHT;;
+    _height = ILI9341_TFTWIDTH;
+    break;
+  }
+}
 
 // Return the size of the display (per current rotation)
 inline short tft_width(void) {
