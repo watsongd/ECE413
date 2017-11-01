@@ -15,6 +15,8 @@
 #include "pt_cornell_1_2.h"
 #include "registers.h"
 
+#define use_uart_serial
+
 #define SAMPLE_RATE     15000        // 200us interval: Enough time for 1440 instructions at 72Mhz.
 #define MAX_PWM         PBCLK/SAMPLE_RATE // eg 2667 at 15000hz.
 
@@ -25,7 +27,8 @@ static PT_THREAD (protothread_UART(struct pt *pt))
 {
     PT_BEGIN(pt);  
     while(1) {
-        PT_SPAWN(pt, &pt_input, PT_GetSerialBuffer(&pt_input) );
+        printf('Printing to the terminal /n/r')
+        PT_SPAWN(pt, &pt_input, PT_GetSerialBuffer(&pt_input));
     } // END WHILE(1)
   PT_END(pt);
 } // keypad thread
@@ -152,13 +155,13 @@ int main(int argc, char** argv) {
                  IC_CAP_32BIT | IC_FEDGE_FALL);
     
     //PPSInput
-    PPSInput(2,U2RX, RPB11);
-    PPSOutput(4, RPB10, U2TX);
-    //UART Setup
-    UARTConfigure(UART2, UART_ENABLE_PINS_TX_RX_ONLY);;
-    UARTSetLineControl(UART2,UART_DATA_SIZE_8_BITS | UART_PARITY_NONE | UART_STOP_BITS_1);
-    UARTSetDataRate(UART2, PBCLK, 9600);
-    UARTEnable(UART2, UART_ENABLE_FLAGS | UART_PERIPHERAL | UART_RX | UART_TX);
+//    PPSInput(2,U2RX, RPB11);
+//    PPSOutput(4, RPB10, U2TX);
+//    //UART Setup
+//    UARTConfigure(UART2, UART_ENABLE_PINS_TX_RX_ONLY);;
+//    UARTSetLineControl(UART2,UART_DATA_SIZE_8_BITS | UART_PARITY_NONE | UART_STOP_BITS_1);
+//    UARTSetDataRate(UART2, PBCLK, 9600);
+//    UARTEnable(UART2, UART_ENABLE_FLAGS | UART_PERIPHERAL | UART_RX | UART_TX);
     
     initTimers();
     capture_init();
