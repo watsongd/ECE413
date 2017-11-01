@@ -157,3 +157,53 @@ int main(int argc, char** argv) {
     
     return (EXIT_SUCCESS);
 }
+
+
+
+//#define SAMPLE_RATE     15000        // 200us interval: Enough time for 1440 instructions at 72Mhz.
+//#define MAX_PWM           PBCLK/SAMPLE_RATE // eg 2667 at 15000hz.
+//
+//int PWMvalue1;
+//int PWMvalue2;
+//
+//void main() {
+//    int samplerate;
+//    SYSTEMConfigPerformance(PBCLK);  // This function sets the PB-Div to 1. Also optimises cache for 72Mhz etc..
+//    mOSCSetPBDIV(OSC_PB_DIV_2);           // Therefore, configure the PB bus to run at 1/2 CPU Frequency
+//                                                                 // you may run at PBclk of 72Mhz if you like too (omit this step)
+//                                                                 // This will double the PWM frequency.
+//    INTEnableSystemMultiVectoredInt();         // make separate interrupts possible
+//
+//    samplerate = SAMPLE_RATE;
+//
+//    OpenOC1(OC_ON | OC_TIMER2_SRC | OC_PWM_FAULT_PIN_DISABLE,0,0); // init OC1 module, T2 =source 
+//    OpenOC2(OC_ON | OC_TIMER2_SRC | OC_PWM_FAULT_PIN_DISABLE,0,0); // init OC2 module, T2 =source(you could do more OCx)
+//
+//    PR2 = FPB/samplerate-1;
+//
+//    mT2SetIntPriority(7);  // you don't have to use ipl7, but make sure INT definition is the same as your choice here
+//    mT2ClearIntFlag();     // make sure no int will be pending until 7200 counts from this point.  
+//    mT2IntEnable(1);       // allow T2 int
+//
+//    PWMvalue1 = 3600;    // 50% modulation
+//    PWMvalue2 = 1800;    // 25% modulation
+//    
+//    while(1) {
+//        // put some useful code in here if you like :)... 
+//        // you could send new values to PWMs  from here
+//        // via variables PWMvalue1 & PWMvalue2 
+//        // e.g.
+//        // PWMvalue1 = some new value;
+//        // PWMvalue2 = some new other value;     (Interrupt will pick them up from global vars).
+//
+//        // you could also put some DSP type code in the interrupt for sampled sound, grabbing samples from memory/other peripheral.
+//        // Check out DMA options for less processor over head when you can, for doing audio stuff. 
+//    }
+//}
+////---------------------------------------------------------------------------------------------------------------
+//void __ISR( _TIMER_2_VECTOR, ipl7) T2Interrupt(void) {
+//    SetDCOC1PWM(PWMvalue1);     // these functions send a new value (0 to 7200) to PWM modulation with some PWM value.
+//    SetDCOC2PWM(PWMvalue2);    // interrupt will fire again 7200 counts later than now  = 200us. (at 5 khz)
+//    mT2ClearIntFlag();                  // clear this interrupt .
+//} 
+////-------------------------------------------------------------------------------------------------------------- 
