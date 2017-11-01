@@ -45,8 +45,8 @@ int kp;
 int ki;
 int kd;
 int pwm;
-int PWMvalue1;
-int PWMvalue2;
+int PWMOCRS;
+int PWMOCR;
 int samplerate;
 int rtRPM = 0;
 int t = 0;
@@ -94,14 +94,17 @@ static PT_THREAD (protothread_controller(struct pt *pt))
         //calculate control variable
         pwm = (kp*error) + (ki*integral) + (kd*derivative);
         
-        //if control variable is positive, speed up
+        //if control variable is positive, slow down
         if (pwm > 0) {
-            //speed up logic
+            //slow down logic (change duty cycle)
+            //PWMOCRS = PWMOCRS - 
+            SetDCOC2PWM(PWMOCRS);
         }
         
-        //if control variable is negative, slow down
+        //if control variable is negative, speed up 
         if (pwm < 0) {
-            //slow down logic
+            //speed up logic (change duty cycle)
+            //SetDCOC2PWM(PWMOCRS);
         }
         
         //set the current error as the last error for future computation
@@ -167,17 +170,17 @@ int main(int argc, char** argv) {
     capture_init();
 
     samplerate = SAMPLE_RATE;
-    PR2 = PBCLK/samplerate-1;
+    PR2 = 65536-1;
     
     //OCRS
-    PWMvalue1 = 3600;    // 50% modulation
+    PWMOCRS = 32768;    // 50% modulation
     //OCR
-    PWMvalue2 = 1800;    // 25% modulation
+    PWMOCR = 32768;    // 50% modulation
     
     INTEnableSystemMultiVectoredInt();         // make separate interrupts possible
 
-    OpenOC1(OC_ON | OC_TIMER2_SRC | OC_PWM_FAULT_PIN_DISABLE,0,0); // init OC1 module, T2 =source 
-    OpenOC2(OC_ON | OC_TIMER2_SRC | OC_PWM_FAULT_PIN_DISABLE,0,0); // init OC2 module, T2 =source
+    OpenOC2(OC_ON | OC_TIMER2_SRC | OC_PWM_FAULT_PIN_DISABLE, PWMOCRS, PWMOCR); // init OC2 module, T3 =source 
+    //OpenOC1(OC_ON | OC_TIMER3_SRC | OC_PWM_FAULT_PIN_DISABLE,PWMOCRS,PWMOCR); // init OC1 module, T3 =source
     
     //PT_INIT(&pt_input);
     PT_INIT(&pt_display);
@@ -193,15 +196,12 @@ int main(int argc, char** argv) {
         //PT_SCHEDULE(protothread_input(&pt_input));
         //PT_SCHEDULE(protothread_UART(&pt_UART));
         PT_SCHEDULE(protothread_display(&pt_display));
+        // you send new values to PWMs  from here based on controller
+        // via variables PWMOCRS & PWMOCR 
+        // e.g.
+        // PWMOCRS = some new value;
+        // PWMOCR = some new other value;     (Interrupt will pick them up from global vars).
     }
     
     return (EXIT_SUCCESS);
 }
-
-////---------------------------------------------------------------------------------------------------------------
-//void __ISR( _TIMER_2_VECTOR, ipl7) T2Interrupt(void) {
-//    SetDCOC1PWM(PWMvalue1);     // these functions send a new value (0 to 7200) to PWM modulation with some PWM value.
-//    SetDCOC2PWM(PWMvalue2);    // interrupt will fire again 7200 counts later than now  = 200us. (at 5 khz)
-//    mT2ClearIntFlag();                  // clear this interrupt .
-//} 
-////-------------------------------------------------------------------------------------------------------------- 
