@@ -13,7 +13,6 @@
 #include "tft_master.h"
 #include "tft_gfx.h"
 #include "pt_cornell_1_2.h"
-#include "registers.h"
 
 #define use_uart_serial
 
@@ -22,21 +21,28 @@
 
 int counter = 0;
 static struct pt pt_display, pt_input, pt_controller, pt_UART;
-        
+
+int desiredRPM = 6;
+int rtRPM = 0;
+int currentRPM;
+
+char c;
+float value;
 static PT_THREAD (protothread_UART(struct pt *pt))
 {
     PT_BEGIN(pt);  
     while(1) {
-        printf('Printing to the terminal /n/r')
+        //printf('Printing to the terminal /n/r');
         PT_SPAWN(pt, &pt_input, PT_GetSerialBuffer(&pt_input));
+        sscanf(PT_term_buffer, "%c %d", c, value);
+        if (c == 's') desiredRPM = value;
+        PT_YIELD_TIME_msec(30);
     } // END WHILE(1)
   PT_END(pt);
 } // keypad thread
 
 
 char stats1[30];
-int desiredRPM = 0;
-int currentRPM;
 int integral;
 int error;
 int last_error;
@@ -48,10 +54,9 @@ int pwm;
 int PWMOCRS;
 int PWMOCR;
 int samplerate;
-int rtRPM = 0;
 int t = 0;
 int tprev, elapsedTime;
-
+//
 static PT_THREAD (protothread_display(struct pt *pt))
 {
     PT_BEGIN(pt);  
@@ -67,14 +72,12 @@ static PT_THREAD (protothread_display(struct pt *pt))
         tft_setTextColor(ILI9341_WHITE); tft_setTextSize(1);
         sprintf(stats1,"Desired RPM: %d, Real Time RPM: %d,", desiredRPM, rtRPM);
         tft_writeString(stats1);
-        
         PT_YIELD_TIME_msec(200);
-        
 
     } // END WHILE(1)
   PT_END(pt);
 } // display thread
-
+//
 static PT_THREAD (protothread_controller(struct pt *pt))
 {
     PT_BEGIN(pt);  
@@ -113,10 +116,10 @@ static PT_THREAD (protothread_controller(struct pt *pt))
     } // END WHILE(1)
   PT_END(pt);
 } // controller thread
-
-
-
-
+//
+//
+//
+//
 //Interrupt ISR =================================================
 void __ISR(_INPUT_CAPTURE_1_VECTOR, ipl2soft) InputCapture1_Handler(void){
     tprev = t;
@@ -139,15 +142,12 @@ void capture_init(){
                          INT_PRIORITY_LEVEL_2);
 }
 
-/*
- * 
- */
+///*
+// * 
+// */
 int main(int argc, char** argv) {
     SYSTEMConfigPerformance(PBCLK);
-    ANSELA = 0; ANSELB = 0; CM1CON = 0; CM2CON = 0;
 
-    //Comparator Output 
-    PPSOutput(1, RPA0, C2OUT);
 
     //Input Capture Input
     PPSInput(3, IC1, RPB13);
@@ -157,17 +157,9 @@ int main(int argc, char** argv) {
     OpenCapture1(IC_ON | IC_INT_1CAPTURE | IC_TIMER2_SRC | IC_EVERY_FALL_EDGE |
                  IC_CAP_32BIT | IC_FEDGE_FALL);
     
-    //PPSInput
-//    PPSInput(2,U2RX, RPB11);
-//    PPSOutput(4, RPB10, U2TX);
-//    //UART Setup
-//    UARTConfigure(UART2, UART_ENABLE_PINS_TX_RX_ONLY);;
-//    UARTSetLineControl(UART2,UART_DATA_SIZE_8_BITS | UART_PARITY_NONE | UART_STOP_BITS_1);
-//    UARTSetDataRate(UART2, PBCLK, 9600);
-//    UARTEnable(UART2, UART_ENABLE_FLAGS | UART_PERIPHERAL | UART_RX | UART_TX);
     
-    initTimers();
-    capture_init();
+    //initTimers();
+    //capture_init();
 
     samplerate = SAMPLE_RATE;
     PR2 = 65536-1;
@@ -189,12 +181,13 @@ int main(int argc, char** argv) {
     //initialize screen
     tft_init_hw();
     tft_begin();
-    tft_setRotation(1); 
     tft_fillScreen(ILI9341_BLACK);  
+    //240x320 vertical display
+    tft_setRotation(3); // Use tft_setRotation(1) for 320x240
 
     while(1){
         //PT_SCHEDULE(protothread_input(&pt_input));
-        //PT_SCHEDULE(protothread_UART(&pt_UART));
+        PT_SCHEDULE(protothread_UART(&pt_UART));
         PT_SCHEDULE(protothread_display(&pt_display));
         // you send new values to PWMs  from here based on controller
         // via variables PWMOCRS & PWMOCR 
