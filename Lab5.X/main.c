@@ -34,16 +34,15 @@ static PT_THREAD (protothread_UART(struct pt *pt))
 char stats1[30];
 int desiredRPM = 0;
 int currentRPM;
-int integral;
-int error;
-int last_error;
-int derivative;
+int integral = 0;
+int error = 0;
+int last_error = 0;
+int derivative = 0;
 int kp;
 int ki;
 int kd;
-int pwm;
+int pwm = 0;
 int PWMOCRS;
-int PWMOCR;
 int samplerate;
 int rtRPM = 0;
 int t = 0;
@@ -77,7 +76,7 @@ static PT_THREAD (protothread_controller(struct pt *pt))
     PT_BEGIN(pt);  
     while(1) {
         //from the IC, determine the current speed of the motor
-        currentRPM = elapsedTime/40000000;
+        currentRPM = (elapsedTime/40000000)*60;
         
         //calculate how much correction is needed to reach the desired speed
         error = desiredRPM - currentRPM;
@@ -98,11 +97,6 @@ static PT_THREAD (protothread_controller(struct pt *pt))
             SetDCOC2PWM(PWMOCRS);
         }
         
-        //if control variable is negative, speed up 
-        if (pwm < 0) {
-            //speed up logic (change duty cycle)
-            //SetDCOC2PWM(PWMOCRS);
-        }
         
         //set the current error as the last error for future computation
         last_error = error;
@@ -169,14 +163,9 @@ int main(int argc, char** argv) {
     samplerate = SAMPLE_RATE;
     PR2 = 65536-1;
     
-    //OCRS
-    PWMOCRS = 32768;    // 50% modulation
-    //OCR
-    PWMOCR = 32768;    // 50% modulation
-    
     INTEnableSystemMultiVectoredInt();         // make separate interrupts possible
 
-    OpenOC2(OC_ON | OC_TIMER2_SRC | OC_PWM_FAULT_PIN_DISABLE, PWMOCRS, PWMOCR); // init OC2 module, T3 =source 
+    OpenOC2(OC_ON | OC_TIMER2_SRC | OC_PWM_FAULT_PIN_DISABLE, 0, 0); // init OC2 module, T3 =source 
     //OpenOC1(OC_ON | OC_TIMER3_SRC | OC_PWM_FAULT_PIN_DISABLE,PWMOCRS,PWMOCR); // init OC1 module, T3 =source
     
     //PT_INIT(&pt_input);
