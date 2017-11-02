@@ -43,19 +43,19 @@ static PT_THREAD (protothread_UART(struct pt *pt))
 
 
 char stats1[30];
-int desiredRPM = 0;
 int currentRPM;
 int integral = 0;
 int error = 0;
 int last_error = 0;
 int derivative = 0;
-int kp;
-int ki;
-int kd;
+int kp = 3;
+int ki = 3;
+int kd = 3;
 int pwm = 0;
 int PWMOCRS;
 int samplerate;
 int t = 0;
+int test = 1;
 int tprev, elapsedTime;
 //
 static PT_THREAD (protothread_display(struct pt *pt))
@@ -71,8 +71,9 @@ static PT_THREAD (protothread_display(struct pt *pt))
         //Draw new stats
         tft_setCursor(20, 5);
         tft_setTextColor(ILI9341_WHITE); tft_setTextSize(1);
-        sprintf(stats1,"Desired RPM: %d, Real Time RPM: %d,", desiredRPM, rtRPM);
+        sprintf(stats1,"Desired RPM: %d, Real Time RPM: %d,", test, error);
         tft_writeString(stats1);
+        test = test + 1;
         PT_YIELD_TIME_msec(200);
 
     } // END WHILE(1)
@@ -102,7 +103,7 @@ static PT_THREAD (protothread_controller(struct pt *pt))
         if (pwm > 0) {
             //slow down logic (change duty cycle)
             //PWMOCRS = PWMOCRS - 
-            SetDCOC2PWM(PWMOCRS);
+            SetDCOC1PWM(PWMOCRS);
         }
         
         
@@ -119,6 +120,7 @@ static PT_THREAD (protothread_controller(struct pt *pt))
 //Interrupt ISR =================================================
 void __ISR(_INPUT_CAPTURE_1_VECTOR, ipl2soft) InputCapture1_Handler(void){
     tprev = t;
+    while(!mIC1CaptureReady());
     t = mIC1ReadCapture();
     if (t > tprev)
         elapsedTime = t - tprev;
@@ -129,7 +131,7 @@ void __ISR(_INPUT_CAPTURE_1_VECTOR, ipl2soft) InputCapture1_Handler(void){
 void initTimers(void){
     //refresh rate
     OpenTimer23(T23_ON | T23_32BIT_MODE_ON | T23_PS_1_1 , 0xffffffff);
-    ConfigIntTimer23(T23_INT_ON | T23_INT_PRIOR_1);
+    //ConfigIntTimer23(T23_INT_ON | T23_INT_PRIOR_1);
 }
 
 void capture_init(){
@@ -153,21 +155,20 @@ int main(int argc, char** argv) {
     OpenCapture1(IC_ON | IC_INT_1CAPTURE | IC_TIMER2_SRC | IC_EVERY_FALL_EDGE |
                  IC_CAP_32BIT | IC_FEDGE_FALL);
     
+    // Output Compare
+    PPSOutput(1, RPA0, OC1);
     
-    //initTimers();
-    //capture_init();
-
-    samplerate = SAMPLE_RATE;
-    PR2 = 65536-1;
+    initTimers();
+    capture_init();
     
     INTEnableSystemMultiVectoredInt();         // make separate interrupts possible
 
-    OpenOC2(OC_ON | OC_TIMER2_SRC | OC_PWM_FAULT_PIN_DISABLE, 0, 0); // init OC2 module, T3 =source 
+    OpenOC1(OC_ON | OC_TIMER2_SRC | OC_PWM_FAULT_PIN_DISABLE, 30000, 30000); // init OC2 module, T3 =source 
     //OpenOC1(OC_ON | OC_TIMER3_SRC | OC_PWM_FAULT_PIN_DISABLE,PWMOCRS,PWMOCR); // init OC1 module, T3 =source
     
-    //PT_INIT(&pt_input);
+    PT_INIT(&pt_controller);
     PT_INIT(&pt_display);
-    PT_INIT(&pt_UART);
+    //PT_INIT(&pt_UART);
     
     //initialize screen
     tft_init_hw();
@@ -177,14 +178,9 @@ int main(int argc, char** argv) {
     tft_setRotation(3); // Use tft_setRotation(1) for 320x240
 
     while(1){
-        //PT_SCHEDULE(protothread_input(&pt_input));
-        PT_SCHEDULE(protothread_UART(&pt_UART));
+        PT_SCHEDULE(protothread_controller(&pt_controller));
+        //PT_SCHEDULE(protothread_UART(&pt_UART));
         PT_SCHEDULE(protothread_display(&pt_display));
-        // you send new values to PWMs  from here based on controller
-        // via variables PWMOCRS & PWMOCR 
-        // e.g.
-        // PWMOCRS = some new value;
-        // PWMOCR = some new other value;     (Interrupt will pick them up from global vars).
     }
     
     return (EXIT_SUCCESS);
