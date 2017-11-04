@@ -1,6 +1,6 @@
 /* 
- * File:   touch_main.c
- * Author: watkinma
+ * File:   main.c
+ * Author: Connor Nace & Geoff Watson
  *
  * Created on September 18, 2015, 10:11 AM
  */
@@ -17,18 +17,14 @@
 
 #define use_uart_serial
 
-#define SAMPLE_RATE     15000        // 200us interval: Enough time for 1440 instructions at 72Mhz.
-#define MAX_PWM         PBCLK/SAMPLE_RATE // eg 2667 at 15000hz.
-
 int counter = 0;
 static struct pt pt_display, pt_input, pt_controller, pt_UART;
 
-int desiredRPM = 1500;
+// Block o' globals
+int desiredRPM = 2500;
 int rtRPM = 0;
-
 char c;
 float value;
-
 char stats1[30];
 char stats2[30];
 int currentRPM;
@@ -39,14 +35,13 @@ int derivative = 0;
 float kp = 1;
 float ki = 1;
 float kd = 1;
-//int pwm = 0;
-//int PWMOCRS;
 int samplerate;
 int t = 0;
 int elapsedTime = 0;
 int possibleElapsedTime = 0;
 int tprev;
 
+// proto-thread for UART setup
 static PT_THREAD (protothread_UART(struct pt *pt))
 {
     PT_BEGIN(pt);  
@@ -63,9 +58,10 @@ static PT_THREAD (protothread_UART(struct pt *pt))
         PT_YIELD_TIME_msec(30);
     } // END WHILE(1)
   PT_END(pt);
-} // keypad thread
+} // UART thread
 
-//
+//Proto-thread that controls the display.  currently displayed is the desired RPM,
+// current RPM, KP, KI, and KD control variables
 static PT_THREAD (protothread_display(struct pt *pt))
 {
     PT_BEGIN(pt);  
@@ -85,7 +81,7 @@ static PT_THREAD (protothread_display(struct pt *pt))
         //Draw new stats
         tft_setCursor(20, 5);
         tft_setTextColor(ILI9341_WHITE); tft_setTextSize(1);
-        sprintf(stats1,"elapsedTime: %d, current RPM: %d,", currentRPM, elapsedTime);
+        sprintf(stats1,"desired RPM: %d, current RPM: %d,", desiredRPM, currentRPM);
         sprintf(stats2,"Kp: %f, Ki: %f, Kd: %f,", kp,ki,kd);
         tft_writeString(stats1);
         
@@ -97,8 +93,11 @@ static PT_THREAD (protothread_display(struct pt *pt))
     } // END WHILE(1)
   PT_END(pt);
 } // display thread
-//
+
 int *sub = 0;
+
+// This is the PID controller for the motor.  derivative, integral, and error are
+//all calculated based on the most recent output
 static PT_THREAD (protothread_controller(struct pt *pt))
 {
     PT_BEGIN(pt);  
@@ -114,35 +113,26 @@ static PT_THREAD (protothread_controller(struct pt *pt))
         error = desiredRPM - currentRPM;
         
         //calculate the integral
-        //integral = integral + error; + (ki*integral)
+        integral = integral + error;
         
         //calculate the derivative
         derivative = error - last_error;
         
         //calculate control variable
         int kpTerm = (kp*error); 
+        int kiTerm = (ki*integral);
         int kdTerm = (kd*derivative);
         int pwm = kpTerm + kdTerm;
         
-        // Geoff this is the shit code
-        //Think its a problem with the variable sub. Or when SetDCOC1RWM() is called
-        
-        //if control variable is positive, slow down
-        if (pwm < -100) {
-            //slow down logic (change duty cycle)
+        /*This is where we think the error occurs */
+        //change the duty cycle based on the control variable
+        if ((pwm < -100) || (pwm > 100)) {
             sub = sub + pwm;
-            //SetDCOC1PWM(sub);
+            SetDCOC1PWM(sub);
         }
-        //if control variable is negative, speed up
-        if (pwm > 100) {
-            //speed up logic (change duty cycle)
-            sub = sub + pwm;
-            //SetDCOC1PWM(sub);
+        else {
+            SetDCOC1PWM(sub);
         }
-//        else {
-//            SetDCOC1PWM(PWMOCRS);
-//        }
-        
         if (sub >= 65535) {
             sub = 65535;
         }
@@ -150,25 +140,21 @@ static PT_THREAD (protothread_controller(struct pt *pt))
         if (sub <= 0) {
             sub = 0;
         }
-        //SetDCOC1PWM(sub);
-        
-        
+     
         //set the current error as the last error for future computation
         last_error = error;
         PT_YIELD_TIME_msec(100);
     } // END WHILE(1)
   PT_END(pt);
 } // controller thread
-//
-//
-//
-//
+
 //Interrupt ISR =================================================
 void __ISR(_INPUT_CAPTURE_1_VECTOR) InputCapture1_Handler(void){
     tprev = t;
     t = mIC1ReadCapture();
     if (t > tprev) {
         possibleElapsedTime = t - tprev;
+        //needed for filtering out bad input capture reads
         if ((currentRPM > 100) && (possibleElapsedTime < 800000)) {
             elapsedTime = elapsedTime;
         }
@@ -186,12 +172,14 @@ void __ISR(_INPUT_CAPTURE_1_VECTOR) InputCapture1_Handler(void){
     INTClearFlag(INT_IC1);
 }
 
+//Initialize the timer in 32 bit mode
 void initTimers(void){
     //refresh rate
     OpenTimer23(T23_ON | T23_32BIT_MODE_ON | T23_PS_1_1 , 0xffffffff);
     //ConfigIntTimer23(T23_INT_ON | T23_INT_PRIOR_1);
 }
 
+//Setup the input capture interrupt
 void capture_init(){
     INTEnable(INT_IC1, INT_ENABLED);
     INTSetVectorPriority(INT_INPUT_CAPTURE_1_VECTOR,
@@ -216,8 +204,7 @@ int main(int argc, char** argv) {
     
     INTEnableSystemMultiVectoredInt();         // make separate interrupts possible
 
-    OpenOC1(OC_ON | OC_TIMER2_SRC | OC_PWM_FAULT_PIN_DISABLE, 0, 0); // init OC2 module, T3 =source 
-    //OpenOC1(OC_ON | OC_TIMER3_SRC | OC_PWM_FAULT_PIN_DISABLE,PWMOCRS,PWMOCR); // init OC1 module, T3 =source
+    OpenOC1(OC_ON | OC_TIMER2_SRC | OC_PWM_FAULT_PIN_DISABLE, 0, 0); // init OC1 module, T2 =source 
     
     // Output Compare
     PPSOutput(1, RPA0, OC1);
