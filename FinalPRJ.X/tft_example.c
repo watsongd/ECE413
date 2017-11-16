@@ -37,82 +37,6 @@
 #define Pushed      3 
 #define MaybeNoPush 4
 
-#define TABLE_SIZE 256
-
-int16_t sineTable[TABLE_SIZE] = {0,50,100,151,201,251,300,350,399,449,497,546,594,642,690,737,783,830,875,920,965,
-        1009,1052,1095,1137,1179,1219,1259,1299,1337,1375,1411,1447,1483,1517,1550,
-        1582,1614,1644,1674,1702,1729,1756,1781,1805,1828,1850,1871,1891,1910,1927,
-        1944,1959,1973,1986,1997,2008,2017,2025,2032,2037,2041,2045,2046,2047,2046,
-        2045,2041,2037,2032,2025,2017,2008,1997,1986,1973,1959,1944,1927,1910,1891,
-        1871,1850,1828,1805,1781,1756,1729,1702,1674,1644,1614,1582,1550,1517,1483,
-        1447,1411,1375,1337,1299,1259,1219,1179,1137,1095,1052,1009,965,920,875,830,
-        783,737,690,642,594,546,497,449,399,350,300,251,201,151,100,50,0,-50,-100,
-        -151,-201,-251,-300,-350,-399,-449,-497,-546,-594,-642,-690,-737,-783,-830,
-        -875,-920,-965,-1009,-1052,-1095,-1137,-1179,-1219,-1259,-1299,-1337,-1375,
-        -1411,-1447,-1483,-1517,-1550,-1582,-1614,-1644,-1674,-1702,-1729,-1756,
-        -1781,-1805,-1828,-1850,-1871,-1891,-1910,-1927,-1944,-1959,-1973,-1986,
-        -1997,-2008,-2017,-2025,-2032,-2037,-2041,-2045,-2046,-2047,-2046,-2045,
-        -2041,-2037,-2032,-2025,-2017,-2008,-1997,-1986,-1973,-1959,-1944,-1927,
-        -1910,-1891,-1871,-1850,-1828,-1805,-1781,-1756,-1729,-1702,-1674,-1644,
-        -1614,-1582,-1550,-1517,-1483,-1447,-1411,-1375,-1337,-1299,-1259,-1219,
-        -1179,-1137,-1095,-1052,-1009,-965,-920,-875,-830,-783,-737,-690,-642,-594,
-        -546,-497,-449,-399,-350,-300,-251,-201,-151,-100,-50};
-
-uint16_t twinkle_base_dur = 500; //duration in ms for base note
-uint32_t twinkle_note1[] = {C4, C4, G4, G4, A4, A4, G4, F4, F4, E4, E4, D4, D4, C4, G4, G4, F4, F4, E4, E4, D4, G4, G4, F4, F4, E4, E4, D4,
-                            C4, C4, G4, G4, A4, A4, G4, F4, F4, E4, E4, D4, D4, C4};
-uint8_t twinkle_dur1[] = {1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 1, 1, 1, 1, 1, 1, 2, 0};
-uint32_t twinkle_note2[] = {C3, E3, F3, E3, D3, C3, F3, G3, E3, C3, E3, F3, G3, G3, E3, F3, G3, G3, C3, E3, F3, E3, D3, C3, F3, G3, C3};
-uint8_t twinkle_dur2[] = {2, 2, 2, 2, 2, 2, 1, 1, 1, 1, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 1, 1, 2, 0}; //0 ends song
-
-// Super Mario
-uint16_t mario_base_dur = 150; //150 //duration in ms for base note
-uint32_t mario_note1[] = {E5, E5, R, E5, R, C5, E5, R, G5, R, G4, R, C5, R, G4, R, E4, R, A4, R, B4, R, A4S, A4, R,
-                          G4, E5, G5, A5, R, F5, G5, R, E5, R, C5, D5, B4, R,
-                          C5, R, G4, R, E4, R, A4, R, B4, R, A4S, A4, R,
-                          G4, E5, G5, A5, R, F5, G5, R, E5, R, C5, D5, B4, R,
-                          R, G5, F5S, F5, D5S, R, E5, R, G4S, A4, C5, R, A4, C5, D5,
-                          R, G5, G5S, F5, D5S, R, E5, R, C6, R, C6, C6, R,
-                          R, G5, F5S, F5, D5S, R, E5, R, G4S, A4, C5, R, A4, C5, D5,
-                          R, D5S, R, D5, R, C5};
-uint8_t mario_dur1[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 3, 1, 2, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1,
-                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,1, 2, 
-                        1, 2, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1, 
-                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,1, 2,
-                        2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-                        2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 
-                        2, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-                        2, 1, 2, 1, 2, 1, 0};
-uint32_t mario_note2[] = {F4S, F4S, R, F4S, R, F4S, F4S, R, B4, R, G3, R, E4, R, C4, R, G3, R, C4, R, D4, R, C4S, C4, R,
-                          C4, G4, B4, C5, R, A4, B4, R, A4, R, E4, F4, D4, R,
-                          E4, R, C4, R, G3, R, C4, R, D4, R, C4S, C4, R,
-                          C4, G4, B4, C5, R, A4, B4, R, A4, R, E4, F4, D4, R,
-                          C3, R, E5, D5S, D5, B4, C4, C5, F3, E4, F4, G4, C4, C4, E4, F4,
-                          C3, R, E5, D5S, D5, B4, G3, C5, R, F5, R, F5, F5, R, G3, R,
-                          C3, R, E5, D5S, D5, B4, C4, C5, F3, E4, F4, G4, C4, C4, E4, F4,
-                          C3, R, G4S, R, F4, R, E4};
-uint8_t mario_dur2[] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 1, 3, 1, 2, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1,
-                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,1, 2, 
-                        1, 2, 1, 2, 1, 2, 1, 1, 1, 1, 1, 1, 1, 
-                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,1, 2,
-                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 
-                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                        1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-                        1, 1, 1, 2, 1, 2, 1, 0}; //0 ends song
-
-//Amazing Grace
-uint16_t amazing_base_dur = 270; //duration in ms for eighth note
-uint32_t amazing_note1[] = {D4, G4, B4, G4, B4, A4, G4, E4, D4, D4, G4, B4, G4, B4, A4, D5,
-                            B4, D5, B4, D5, B4, G4, D4, E4, G4, G4, E4, D4, D4, G4, B4, G4, B4, A4, G4};
-uint8_t amazing_dur1[] = { 2, 4, 1, 1, 4, 2, 4, 2, 4, 2, 4, 1, 1, 4, 2, 10, 
-                           2, 3, 1, 1, 1, 4, 2, 3, 1, 1, 1, 4, 2, 4, 1, 1, 4, 2, 10, 0};
-uint32_t amazing_note2[] = {B3, B3, D4, D4, C4, B3, C4, B3, B3, B3, D4, D4, D4, G3,
-                            D4, D4, D4, D4, D4, C4, D4, C4, B3, G3, B3, D4, D4, C4, G3};
-uint8_t amazing_dur2[] = { 2, 4, 2, 4, 2, 4, 2, 4, 2, 4, 2, 4, 2, 10, 
-                           2, 4, 2, 4, 2, 3, 1, 2, 4, 2, 4, 2, 4, 2, 10, 0}; //0 ends song
-
-int16_t triangleTable[TABLE_SIZE];
-
 #define F_CPU 40000000
 #define F_dac 550000
 const short PR = F_CPU/F_dac - 1;
@@ -372,6 +296,24 @@ static PT_THREAD (protothread_notes(struct pt *pt))
   PT_END(pt);
 } // note thread
 
+int getFingerPosition(){
+   uint16_t left_thumb   = mPORTBReadBits(BIT_10) << 9;
+   uint16_t left_index   = mPORTBReadBits(BIT_11) << 8;
+   uint16_t left_middle  = mPORTBReadBits(BIT_13) << 7;
+   uint16_t left_ring    = mPORTBReadBits(BIT_14) << 6;
+   uint16_t left_pinky   = mPORTBReadBits(BIT_15) << 4;
+   
+   uint16_t right_index  = mPORTBReadBits(BIT_7) << 3;
+   uint16_t right_middle = mPORTBReadBits(BIT_8) << 2;
+   uint16_t right_ring   = mPORTBReadBits(BIT_9) << 1;
+   uint16_t right_pinky  = mPORTBReadBits(BIT_5);
+   
+   unint16_t fingerPosition = left_thumb || left_index || left_middle || left_ring || left_pinky
+           || right_index || right_middle || right_ring || right_pinky;
+   
+   return fingerPostion; 
+}
+
 void initDAC(void){
     anSS = 0;
     dirSS = 0;
@@ -444,35 +386,6 @@ void main(void) {
     // init the threads
     PT_INIT(&pt_keypad);
     PT_INIT(&pt_notes);
-
-
-    // init the display
-    tft_init_hw();
-    tft_begin();
-    tft_fillScreen(ILI9341_BLACK);
-    //240x320 vertical display
-    tft_setRotation(3); // Use tft_setRotation(1) for 320x240
-    
-    //UI
-    tft_fillRoundRect(0,0, 200, 50, 1, ILI9341_BLACK);// x,y,w,h,radius,color
-    tft_setCursor(0, 0);
-    tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
-    tft_writeString("Press a key to play a song!");
-    tft_setCursor(30, 30);
-    tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
-    tft_writeString("1) Mario Theme Song");
-    tft_setCursor(30, 60);
-    tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
-    tft_writeString("2) Twinkle-Twinkle");
-    tft_setCursor(30, 90);
-    tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
-    tft_writeString("   Little Star");
-    tft_setCursor(30, 120);
-    tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
-    tft_writeString("3) Amazing Grace");
-    
-    //selection = 3;
-    num_notes = 200;
     
     // round-robin scheduler for threads
     while (1){
