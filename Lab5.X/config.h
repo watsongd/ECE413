@@ -27,7 +27,7 @@
 //#define use_vref_debug
 
 // IF use_uart_serial IS defined, pin 21 and pin 22 are used by the uart
-//#define use_uart_serial
+#define use_uart_serial
 #define BAUDRATE 115200 // must match PC terminal emulator setting
 
 /////////////////////////////////
