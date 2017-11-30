@@ -1,12 +1,10 @@
-/* Authors: Phil Bedoukian, Joe Sluke, Austin Wiles
- *
+/*  
+ * Authors: Connor Nace and Geoff Watson
  * Target PIC:  PIC32MX250F128B
  *
  * Controls the entire system. Calls method from this class and other classes
- * to integrate all parts of the Musical Fingerprint-Scanning Doorbell.
- * Methods specifically in this class control the interface of the touch
- * display, including drawing the screens and detecting touch overlap.
- * State machines in this class determine what part of the system is active.
+ * to integrate all parts of the Virtual Instrument.
+ * Methods specifically in this class control initial reading of the SD card
  *
  */
 #include "config.h"
@@ -81,7 +79,7 @@ int sys_time_seconds;
 
 //Reads the SD card, searching for notes, and creates files for each notes found on the SD card.
 void init_notes() {
-    initSongs(&temp_note_files);
+    initNotes(&temp_note_files);
     int i;
     //Finds notes on SD card and puts them in an array (some blocks aren't songs)
     for (i=0; i<30; i++) {

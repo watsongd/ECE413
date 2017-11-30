@@ -1,11 +1,11 @@
-/* Code roughly based on Code and Life by Joonas Pihlajamaa
- * Authors: Geoff Watson and Connor Nace
+/* Code roughly based on Musical Fingerprint-Scanning Doorbell by
+ * Phil Bedoukian, Joe Sluke, Austin Wiles
+ * Authors: Connor Nace and Geoff Watson
  * 
  * Target PIC:  PIC32MX250F128B
  * Target SD: 8GB SanDisk SDHC
  * 
- * Header containing mostly structs used in interfacing with the
- * SD card.
+ * Header containing mainly structs used for storing SD card information
  * 
  *
  */
