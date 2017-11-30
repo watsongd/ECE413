@@ -7,6 +7,7 @@
       <itemPath>structs.h</itemPath>
       <itemPath>pt_cornell_1_2.h</itemPath>
       <itemPath>config.h</itemPath>
+      <itemPath>fat.c</itemPath>
     </logicalFolder>
     <logicalFolder name="LinkerScript"
                    displayName="Linker Files"

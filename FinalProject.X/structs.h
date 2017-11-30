@@ -15,7 +15,7 @@
 
 //used for storing boot sector parameters and other info useful for traversal
 //of the file system
-struct FAT32format{
+struct FAT32param{
     uint16_t bytesPerSector; //0x0B
     uint8_t sectorsPerCluster;//0x0D
     uint32_t reservedSectors;//0x0E
