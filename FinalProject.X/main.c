@@ -22,6 +22,16 @@
 #include "structs.h"
 #include <string.h>
 
+//Notes for a basic scale
+#define G1 0x0E0
+#define A1 0x0C0
+#define B1 0x080
+#define C1 0x040
+#define D1 0x1EE
+#define E1 0x1EC
+#define F1 0x1E8
+#define G2 0x1E0
+
 /*
 
  *
@@ -121,6 +131,25 @@ static PT_THREAD (protothread_note(struct pt *pt))
     PT_END(pt);
 }
 
+
+//Method for getting finger positions
+//Returns an int with finger positions encoded
+int getFingerPosition(){
+   uint16_t left_thumb   = mPORTBReadBits(BIT_10) << 9;
+   uint16_t left_index   = mPORTBReadBits(BIT_11) << 8;
+   uint16_t left_middle  = mPORTBReadBits(BIT_13) << 7;
+   uint16_t left_ring    = mPORTBReadBits(BIT_14) << 6;
+   uint16_t left_pinky   = mPORTBReadBits(BIT_15) << 4;
+   
+   uint16_t right_index  = mPORTBReadBits(BIT_7) << 3;
+   uint16_t right_middle = mPORTBReadBits(BIT_8) << 2;
+   uint16_t right_ring   = mPORTBReadBits(BIT_9) << 1;
+   uint16_t right_pinky  = mPORTBReadBits(BIT_5);
+   
+   uint16_t fingerPosition = (left_thumb || left_index || left_middle || left_ring || left_pinky || right_index || right_middle || right_ring || right_pinky);
+   
+   return fingerPosition; 
+}
 /* -----------------------------------------------------------------------------
     Main
    ---------------------------------------------------------------------------*/
