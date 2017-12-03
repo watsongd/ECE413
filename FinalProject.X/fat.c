@@ -67,7 +67,7 @@ uint32_t directory_find(char *folderName){
     //read the full root directory
     fat_read(FAT32.rootStart, 0, &readBuffer, 512);
     
-    //find music folder
+    //find note folder
     //8 bytes are used in the full name (only 8 character filenames allowed)
     uint16_t offset;
     uint16_t i;

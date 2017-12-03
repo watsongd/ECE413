@@ -18,9 +18,9 @@
 #include "pt_cornell_1_2.h"
 #include <stdio.h>
 #include "math.h"
-
 #include "structs.h"
 #include <string.h>
+
 
 //Notes for a basic scale
 #define G1 0x0E0
@@ -58,27 +58,20 @@ typedef struct History {
 struct file notes[201];
 
 //music file arrays
-struct file note_files[30];
-struct file temp_note_files[30];
+struct file note_files[10];
+struct file temp_note_files[10];
 struct file selected_note;
 
-uint32_t music_sector;
 //total number of notes
 uint32_t num_notes = 0;
-//number of songs on enroll_song_select
-uint32_t num_notes_1 = 0;
-//number of songs on enroll_song_select_2
-uint32_t num_notes_2 = 0;
+uint32_t counter = 0;
 // string buffer
 uint8_t buffer[60];
-//number of notes in history
-uint32_t history_count = 0;
 
 
 int play_note = 0;
-int prev_note = 0;
 
-static struct pt pt_note;
+static struct pt pt_note, pt_finger_pos;
 
 // system 1 second interval tick
 int sys_time_seconds;
@@ -99,14 +92,6 @@ void init_notes() {
             num_notes++;
         }
     }
-    //sets song counts for each song select page
-    if (num_notes >= 10) {
-        num_notes_1 = 10;
-        num_notes_2 = num_notes - 10;
-    }
-    else {
-        num_notes_1 = num_notes;
-    }
 }
 
 
@@ -114,6 +99,7 @@ void init_notes() {
       Proto-threads
    ---------------------------------------------------------------------------*/
 
+int j = 0;
 
 //This proto-thread checks for a play_note flag and plays the selected note when high
 static PT_THREAD (protothread_note(struct pt *pt))
@@ -127,11 +113,35 @@ static PT_THREAD (protothread_note(struct pt *pt))
             playSong(&selected_note);
             play_note = 0;
         }
+        counter++;
+        if(counter == 2000) {
+            play_note = 1;
+            selected_note = note_files[j];
+            if (j > 10) {
+                j = 0;
+            }
+            else {
+                j++;
+            }
+            counter = 0;
+        }
     }//END WHILE(1)
     PT_END(pt);
 }
 
-
+//This proto-thread checks the data from the sensors and selects a note to play 
+//depending on which sensors are bent.
+static PT_THREAD (protothread_finger_pos(struct pt *pt))
+{
+    PT_BEGIN(pt);
+      while(1) {
+        //check finger positions every 20 milliseconds
+        PT_YIELD_TIME_msec(20);
+        
+        
+    }//END WHILE(1)
+    PT_END(pt);
+}
 //Method for getting finger positions
 //Returns an int with finger positions encoded
 int getFingerPosition(){
@@ -154,7 +164,7 @@ int getFingerPosition(){
     Main
    ---------------------------------------------------------------------------*/
 void main(void) {
-    SYSTEMConfigPerformance(PBCLK);
+    SYSTEMConfigPerformance(sys_clock);
 
     ANSELA = 0; ANSELB = 0; CM1CON = 0; CM2CON = 0;
 
@@ -165,17 +175,17 @@ void main(void) {
     PT_INIT(&pt_note);
 
     //setup gloves!!
+    
+    INTEnableSystemMultiVectoredInt();
+    init_notes();
+    //
+    delay_ms(10);
+    
+    
 
 
+    while (1){
+        PT_SCHEDULE(protothread_note(&pt_note));
 
-INTEnableSystemMultiVectoredInt();
-init_notes();
-//
-delay_ms(10);
-
-
-  while (1){
-      PT_SCHEDULE(protothread_song(&pt_note));
-
-      }
-  }
+    }
+}

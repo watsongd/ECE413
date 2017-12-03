@@ -82,10 +82,10 @@ void initDMA(void){
     
 }
 //loads in music files from the SD card
-void initNotes(struct file * musicFiles){
+void initNotes(struct file * noteFiles){
   //DMA to DAC
   initDMA();
-  //DAC spi channel 1
+  //DAC spi channel 2
   initDAC();
   //sets SD card in SPI and takes out of idle mode
   SD_init();
@@ -94,8 +94,8 @@ void initNotes(struct file * musicFiles){
   fat32_init();
   
   //finds files in the music directory
-  uint32_t musicSector = directory_find("MUSIC  ");
-  file_finds(musicSector, musicFiles);
+  uint32_t musicSector = directory_find("NOTES  ");
+  file_finds(musicSector, noteFiles);
 
 }
 
