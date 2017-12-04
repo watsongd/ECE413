@@ -137,7 +137,25 @@ static PT_THREAD (protothread_finger_pos(struct pt *pt))
       while(1) {
         //check finger positions every 20 milliseconds
         PT_YIELD_TIME_msec(20);
-        
+        uint16_t fingerPos = getFingerPosition();
+        switch (fingerPos) {
+            case (0x:080):
+                //Note == B1
+                break;
+            case (0x0C0):
+                //Note == A1
+                break;
+            case (0x040):
+                //Note == C1
+                break;
+            case (0x0E0):
+                //Note == G1
+                break;
+            case(0x1EE):
+                //NOte == D1
+                break;
+                
+        }       
         
     }//END WHILE(1)
     PT_END(pt);
@@ -145,16 +163,16 @@ static PT_THREAD (protothread_finger_pos(struct pt *pt))
 //Method for getting finger positions
 //Returns an int with finger positions encoded
 int getFingerPosition(){
-   uint16_t left_thumb   = mPORTBReadBits(BIT_10) << 9;
-   uint16_t left_index   = mPORTBReadBits(BIT_11) << 8;
-   uint16_t left_middle  = mPORTBReadBits(BIT_13) << 7;
-   uint16_t left_ring    = mPORTBReadBits(BIT_14) << 6;
-   uint16_t left_pinky   = mPORTBReadBits(BIT_15) << 4;
+   uint16_t left_thumb   = mPORTBReadBits(BIT_12)<< 9;
+   uint16_t left_index   = mPORTBReadBits(BIT_10)<< 8;
+   uint16_t left_middle  = mPORTBReadBits(BIT_8) << 7;
+   uint16_t left_ring    = mPORTBReadBits(BIT_7) << 6;
+   uint16_t left_pinky   = mPORTBReadBits(BIT_6) << 4;
    
-   uint16_t right_index  = mPORTBReadBits(BIT_7) << 3;
-   uint16_t right_middle = mPORTBReadBits(BIT_8) << 2;
-   uint16_t right_ring   = mPORTBReadBits(BIT_9) << 1;
-   uint16_t right_pinky  = mPORTBReadBits(BIT_5);
+   uint16_t right_index  = mPORTBReadBits(BIT_0) << 3;
+   uint16_t right_middle = mPORTBReadBits(BIT_1) << 2;
+   uint16_t right_ring   = mPORTBReadBits(BIT_2) << 1;
+   uint16_t right_pinky  = mPORTBReadBits(BIT_3);
    
    uint16_t fingerPosition = (left_thumb || left_index || left_middle || left_ring || left_pinky || right_index || right_middle || right_ring || right_pinky);
    
