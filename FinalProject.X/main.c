@@ -109,22 +109,22 @@ static PT_THREAD (protothread_note(struct pt *pt))
         //check every millisecond to play song
         PT_YIELD_TIME_msec(1);
         //if play_note flag is high, play song and then reset the flag
-        if (play_note == 1) {
+        if (play_note == 1 && footPedalPushed()) {
             playSong(&selected_note);
             play_note = 0;
         }
-        counter++;
-        if(counter == 2000) {
-            play_note = 1;
-            selected_note = note_files[j];
-            if (j > 10) {
-                j = 0;
-            }
-            else {
-                j++;
-            }
-            counter = 0;
-        }
+//        counter++;
+//        if(counter == 2000) {
+//            play_note = 1;
+//            selected_note = note_files[j];
+//            if (j > 10) {
+//                j = 0;
+//            }
+//            else {
+//                j++;
+//            }
+//            counter = 0;
+//        }
     }//END WHILE(1)
     PT_END(pt);
 }
@@ -177,6 +177,10 @@ int getFingerPosition(){
    uint16_t fingerPosition = (left_thumb || left_index || left_middle || left_ring || left_pinky || right_index || right_middle || right_ring || right_pinky);
    
    return fingerPosition; 
+}
+
+int footPedalPushed() {
+    return mPORTAReadBits(BIT_0);
 }
 /* -----------------------------------------------------------------------------
     Main
