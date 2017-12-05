@@ -45,10 +45,11 @@
     Structs
    ---------------------------------------------------------------------------*/
 
-typedef struct History {
-    int id;
-    char note_title[8];
-} History;
+typedef struct Note {
+    uint8_t id;
+    uint8_t fileIndex;
+    char title[3];
+} Note;
 
 /* -----------------------------------------------------------------------------
     Initializing variables
@@ -68,6 +69,9 @@ uint32_t counter = 0;
 // string buffer
 uint8_t buffer[60];
 
+//notes
+Note possible_notes[10];
+
 
 int play_note = 0;
 
@@ -84,13 +88,23 @@ int sys_time_seconds;
 void init_notes() {
     initNotes(&temp_note_files);
     int i;
+    int j;
     //Finds notes on SD card and puts them in an array (some blocks aren't songs)
-    for (i=0; i<30; i++) {
+    for (i=0; i<10; i++) {
         //if cluster == 0, then ignore (not a song)
         if (temp_note_files[i].cluster != 0) {
             note_files[num_notes] = temp_note_files[i];
             num_notes++;
         }
+    }
+    
+    //for each note.wav file found, create a note struct
+    for (j = 0; j < sizeof(note_files)/sizeof(note_files[0]); j++) {
+        Note newNote;
+        newNote.title = note_files[j].fileName;
+        newNote.id = j;
+        newNote.fileIndex = j;
+        possible_notes[j] = newNote;
     }
 }
 
@@ -137,10 +151,16 @@ static PT_THREAD (protothread_finger_pos(struct pt *pt))
       while(1) {
         //check finger positions every 20 milliseconds
         PT_YIELD_TIME_msec(20);
+        int i;
         uint16_t fingerPos = getFingerPosition();
         switch (fingerPos) {
             case (0x:080):
                 //Note == B1
+                for (i = 0; i < sizeof(possible_notes)/sizeof(possible_notes[0]); i++){
+                    if (possible_notes[i].title == "B1") {
+                        selected_note = note_files[possible_notes[i].fileIndex];
+                    }
+                }
                 break;
             case (0x0C0):
                 //Note == A1
