@@ -48,7 +48,7 @@
 typedef struct Note {
     uint8_t id;
     uint8_t fileIndex;
-    char title[3];
+    char name[7];
 } Note;
 
 /* -----------------------------------------------------------------------------
@@ -75,7 +75,7 @@ Note possible_notes[10];
 
 int play_note = 0;
 
-static struct pt pt_note, pt_finger_pos;
+static struct pt pt_note, pt_finger_pos, pt_footpedal;
 
 // system 1 second interval tick
 int sys_time_seconds;
@@ -97,23 +97,12 @@ void init_notes() {
             num_notes++;
         }
     }
-    
-    //for each note.wav file found, create a note struct
-    for (j = 0; j < sizeof(note_files)/sizeof(note_files[0]); j++) {
-        Note newNote;
-        newNote.title = note_files[j].fileName;
-        newNote.id = j;
-        newNote.fileIndex = j;
-        possible_notes[j] = newNote;
-    }
 }
 
 
 /* -----------------------------------------------------------------------------
       Proto-threads
    ---------------------------------------------------------------------------*/
-
-int j = 0;
 
 //This proto-thread checks for a play_note flag and plays the selected note when high
 static PT_THREAD (protothread_note(struct pt *pt))
@@ -123,22 +112,27 @@ static PT_THREAD (protothread_note(struct pt *pt))
         //check every millisecond to play song
         PT_YIELD_TIME_msec(1);
         //if play_note flag is high, play song and then reset the flag
-        if (play_note == 1 && footPedalPushed()) {
+        if (play_note == 1) {
             playSong(&selected_note);
+        }
+    }//END WHILE(1)
+    PT_END(pt);
+}
+
+//This proto-thread checks for a play_note flag and plays the selected note when high
+static PT_THREAD (protothread_footpedal(struct pt *pt))
+{
+    PT_BEGIN(pt);
+      while(1) {
+        //check every millisecond to play note
+        PT_YIELD_TIME_msec(10);
+        //if foot pedal is pressed, set play note to 1
+        if (footPedalPushed()) {
+            play_note = 1;
+        }
+        else {
             play_note = 0;
         }
-//        counter++;
-//        if(counter == 2000) {
-//            play_note = 1;
-//            selected_note = note_files[j];
-//            if (j > 10) {
-//                j = 0;
-//            }
-//            else {
-//                j++;
-//            }
-//            counter = 0;
-//        }
     }//END WHILE(1)
     PT_END(pt);
 }
@@ -150,31 +144,71 @@ static PT_THREAD (protothread_finger_pos(struct pt *pt))
     PT_BEGIN(pt);
       while(1) {
         //check finger positions every 20 milliseconds
-        PT_YIELD_TIME_msec(20);
+          //
+        PT_YIELD_TIME_msec(10);
         int i;
         uint16_t fingerPos = getFingerPosition();
         switch (fingerPos) {
-            case (0x:080):
+            case B1:
                 //Note == B1
-                for (i = 0; i < sizeof(possible_notes)/sizeof(possible_notes[0]); i++){
-                    if (possible_notes[i].title == "B1") {
-                        selected_note = note_files[possible_notes[i].fileIndex];
-                    }
-                }
+                selected_note = note_files[0];
+//                for (i = 0; i < sizeof(note_files)/sizeof(note_files[0]); i++) {
+//                    char* firstChar  = &(note_files[i].fileName[0]);
+//                    const char* secondChar = &(note_files[i].fileName[1]);
+//                    const char* note = "B1";
+//                    if (strcmp(note,strcat(firstChar, secondChar)) == 0) {
+//                        selected_note = note_files[1];
+//                    }
+//                }
                 break;
-            case (0x0C0):
+            case A1:
                 //Note == A1
+                selected_note = note_files[1];
+//                for (i = 0; i < sizeof(note_files)/sizeof(note_files[0]); i++) {
+//                    char* firstChar  = &(note_files[i].fileName[0]);
+//                    const char* secondChar = &(note_files[i].fileName[1]);
+//                    const char* note = "A1";
+//                    if (strcmp(note,strcat(firstChar, secondChar)) == 0) {
+//                        selected_note = note_files[1];
+//                    }
+//                }
                 break;
-            case (0x040):
+            case C1:
                 //Note == C1
+                selected_note = note_files[2];
+//                for (i = 0; i < sizeof(note_files)/sizeof(note_files[0]); i++) {
+//                    char* firstChar  = &(note_files[i].fileName[0]);
+//                    const char* secondChar = &(note_files[i].fileName[1]);
+//                    const char* note = "C1";
+//                    if (strcmp(note,strcat(firstChar, secondChar)) == 0) {
+//                        selected_note = note_files[1];
+//                    }
+//                }
                 break;
-            case (0x0E0):
+            case G1:
                 //Note == G1
+                selected_note = note_files[3];
+//                for (i = 0; i < sizeof(note_files)/sizeof(note_files[0]); i++) {
+//                    char* firstChar  = &(note_files[i].fileName[0]);
+//                    const char* secondChar = &(note_files[i].fileName[1]);
+//                    const char* note = "G1";
+//                    if (strcmp(note,strcat(firstChar, secondChar)) == 0) {
+//                        selected_note = note_files[1];
+//                    }
+//                }
                 break;
-            case(0x1EE):
+            case D1:
                 //NOte == D1
-                break;
-                
+                selected_note = note_files[4];
+//                for (i = 0; i < sizeof(note_files)/sizeof(note_files[0]); i++) {
+//                    char* firstChar  = &(note_files[i].fileName[0]);
+//                    const char* secondChar = &(note_files[i].fileName[1]);
+//                    const char* note = "D1";
+//                    if (strcmp(note,strcat(firstChar, secondChar)) == 0) {
+//                        selected_note = note_files[1];
+//                    }
+//                }
+                break;               
         }       
         
     }//END WHILE(1)
@@ -183,10 +217,10 @@ static PT_THREAD (protothread_finger_pos(struct pt *pt))
 //Method for getting finger positions
 //Returns an int with finger positions encoded
 int getFingerPosition(){
-   uint16_t left_thumb   = mPORTBReadBits(BIT_12)<< 9;
-   uint16_t left_index   = mPORTBReadBits(BIT_10)<< 8;
-   uint16_t left_middle  = mPORTBReadBits(BIT_8) << 7;
-   uint16_t left_ring    = mPORTBReadBits(BIT_7) << 6;
+   uint16_t left_thumb   = mPORTBReadBits(BIT_12)<< 8;
+   uint16_t left_index   = mPORTBReadBits(BIT_10)<< 7;
+   uint16_t left_middle  = mPORTBReadBits(BIT_8) << 6;
+   uint16_t left_ring    = mPORTBReadBits(BIT_7) << 5;
    uint16_t left_pinky   = mPORTBReadBits(BIT_6) << 4;
    
    uint16_t right_index  = mPORTBReadBits(BIT_0) << 3;
@@ -209,25 +243,29 @@ void main(void) {
     SYSTEMConfigPerformance(sys_clock);
 
     ANSELA = 0; ANSELB = 0; CM1CON = 0; CM2CON = 0;
+    
+    mPORTASetPinsDigitalIn(BIT_0);
+    // 1 0101 1100 1111
+    mPORTBSetPinsDigitalIn(0x15CF);
 
     // === configure threads ==========
     PT_setup();
 
     // initialize the threads
     PT_INIT(&pt_note);
-
-    //setup gloves!!
+    //PT_INIT(&pt_finger_pos);
+    PT_INIT(&pt_footpedal);
     
     INTEnableSystemMultiVectoredInt();
     init_notes();
-    //
-    delay_ms(10);
     
-    
+    selected_note = note_files[1];
 
+    delay_ms(10);
 
     while (1){
         PT_SCHEDULE(protothread_note(&pt_note));
-
+        //PT_SCHEDULE(protothread_finger_pos(&pt_finger_pos));
+        PT_SCHEDULE(protothread_footpedal(&pt_footpedal));
     }
 }

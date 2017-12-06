@@ -72,7 +72,7 @@ void initDMA(void){
             2, 2);
     
     
-    //cell transfer triggered by timer
+    //cell transfer triggered by timer 2 interrupt
     DmaChnSetEventControl(DMA_SPI_chn, DMA_EV_START_IRQ(_TIMER_2_IRQ));
     
     //interrupt to flag when DMA transfer complete
