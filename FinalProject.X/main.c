@@ -23,14 +23,16 @@
 
 
 //Notes for a basic scale
-#define G1 0x0E0
-#define A1 0x0C0
-#define B1 0x080
+#define G1 0x2C0
+#define A1 0x280
+#define B1 0x200
 #define C1 0x040
-#define D1 0x1EE
-#define E1 0x1EC
-#define F1 0x1E8
-#define G2 0x1E0
+#define D1 0xac7
+
+//Note Done Yet
+//#define E1 0x1EC
+//#define F1 0x1E8
+//#define G2 0x1E0
 
 /*
 
@@ -40,6 +42,8 @@
 // PORT B
 #define EnablePullDownB(bits) CNPUBCLR=bits; CNPDBSET=bits;
 #define DisablePullDownB(bits) CNPDBCLR=bits;
+#define DisablePullDownA(bits) CNPDACLR=bits;
+
 
 /* -----------------------------------------------------------------------------
     Structs
@@ -143,7 +147,7 @@ static PT_THREAD (protothread_finger_pos(struct pt *pt))
 {
     PT_BEGIN(pt);
       while(1) {
-        //check finger positions every 20 milliseconds
+        //check finger positions every 10 milliseconds
           //
         PT_YIELD_TIME_msec(10);
         int i;
@@ -152,14 +156,14 @@ static PT_THREAD (protothread_finger_pos(struct pt *pt))
             case B1:
                 //Note == B1
                 selected_note = note_files[0];
-//                for (i = 0; i < sizeof(note_files)/sizeof(note_files[0]); i++) {
-//                    char* firstChar  = &(note_files[i].fileName[0]);
-//                    const char* secondChar = &(note_files[i].fileName[1]);
-//                    const char* note = "B1";
-//                    if (strcmp(note,strcat(firstChar, secondChar)) == 0) {
-//                        selected_note = note_files[1];
-//                    }
-//                }
+                for (i = 0; i < sizeof(note_files)/sizeof(note_files[0]); i++) {
+                    char* firstChar  = &(note_files[i].fileName[0]);
+                    const char* secondChar = &(note_files[i].fileName[1]);
+                    //const char* note = "B1";
+                    if (strcmp("B1",strcat(firstChar, secondChar)) == 0) {
+                        selected_note = note_files[1];
+                    }
+                }
                 break;
             case A1:
                 //Note == A1
@@ -217,15 +221,15 @@ static PT_THREAD (protothread_finger_pos(struct pt *pt))
 //Method for getting finger positions
 //Returns an int with finger positions encoded
 int getFingerPosition(){
-   uint16_t left_thumb   = mPORTBReadBits(BIT_12)<< 8;
-   uint16_t left_index   = mPORTBReadBits(BIT_10)<< 7;
-   uint16_t left_middle  = mPORTBReadBits(BIT_8) << 6;
-   uint16_t left_ring    = mPORTBReadBits(BIT_7) << 5;
-   uint16_t left_pinky   = mPORTBReadBits(BIT_6) << 4;
+   uint16_t left_thumb   = mPORTBReadBits(BIT_12);
+   uint16_t left_index   = mPORTBReadBits(BIT_10);
+   uint16_t left_middle  = mPORTBReadBits(BIT_8);
+   uint16_t left_ring    = mPORTBReadBits(BIT_7);
+   uint16_t left_pinky   = mPORTBReadBits(BIT_6);
    
-   uint16_t right_index  = mPORTBReadBits(BIT_0) << 3;
-   uint16_t right_middle = mPORTBReadBits(BIT_1) << 2;
-   uint16_t right_ring   = mPORTBReadBits(BIT_2) << 1;
+   uint16_t right_index  = mPORTBReadBits(BIT_0);
+   uint16_t right_middle = mPORTBReadBits(BIT_1);
+   uint16_t right_ring   = mPORTBReadBits(BIT_2);
    uint16_t right_pinky  = mPORTBReadBits(BIT_3);
    
    uint16_t fingerPosition = (left_thumb || left_index || left_middle || left_ring || left_pinky || right_index || right_middle || right_ring || right_pinky);
@@ -244,7 +248,18 @@ void main(void) {
 
     ANSELA = 0; ANSELB = 0; CM1CON = 0; CM2CON = 0;
     
-    mPORTASetPinsDigitalIn(BIT_0);
+    //need to disable pull up / down resistor
+    CNPUA = 0;
+    CNPDA = 0;
+    CNPUB = 0;
+    CNPDB = 0;
+    DisablePullDownA(0);
+    DisablePullDownB(0);
+
+    
+    mPORTACloseBits(BIT_0);
+    //mPORTASetPinsDigitalIn(BIT_0);
+    
     // 1 0101 1100 1111
     mPORTBSetPinsDigitalIn(0x15CF);
 
@@ -259,7 +274,7 @@ void main(void) {
     INTEnableSystemMultiVectoredInt();
     init_notes();
     
-    selected_note = note_files[1];
+    selected_note = note_files[3];
 
     delay_ms(10);
 
