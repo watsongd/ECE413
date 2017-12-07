@@ -21,6 +21,7 @@
 #include "structs.h"
 #include <string.h>
 
+#define use_uart_serial
 
 //Notes for a basic scale
 #define G1 0x2C0
@@ -40,9 +41,9 @@
  ****************************************************/
 
 // PORT B
-#define EnablePullDownB(bits) CNPUBCLR=bits; CNPDBSET=bits;
-#define DisablePullDownB(bits) CNPDBCLR=bits;
-#define DisablePullDownA(bits) CNPDACLR=bits;
+//#define EnablePullDownB(bits) CNPUBCLR=bits; CNPDBSET=bits;
+//#define DisablePullDownB(bits) CNPDBCLR=bits;
+//#define DisablePullDownA(bits) CNPDACLR=bits;
 
 
 /* -----------------------------------------------------------------------------
@@ -79,7 +80,7 @@ Note possible_notes[10];
 
 int play_note = 0;
 
-static struct pt pt_note, pt_finger_pos, pt_footpedal;
+static struct pt pt_note, pt_finger_pos, pt_UART, pt_input;
 
 // system 1 second interval tick
 int sys_time_seconds;
@@ -92,6 +93,7 @@ int sys_time_seconds;
 void init_notes() {
     initNotes(&temp_note_files);
     int i;
+    int j;
     //Finds notes on SD card and puts them in an array (some blocks aren't songs)
     //10 is size of temp_note_files, so change range if more notes are added
     for (i=0; i<10; i++) {
@@ -120,28 +122,50 @@ static PT_THREAD (protothread_note(struct pt *pt))
 //            playSong(&selected_note);
 //        }
         playSong(&selected_note);
-    }//END WHILE(1)
-    PT_END(pt);
-}
 
-//This proto-thread checks for the foot pedal to be pressed and sets a flag to
-//play the note corresponding the finger position
-static PT_THREAD (protothread_footpedal(struct pt *pt))
-{
-    PT_BEGIN(pt);
-      while(1) {
-        //check every millisecond to play note
-        PT_YIELD_TIME_msec(10);
-        //if foot pedal is pressed, set play note to 1
-        if (1) {
-            play_note = 1;
-        }
-        else {
-            play_note = 0;
-        }
     }//END WHILE(1)
     PT_END(pt);
 }
+char c;
+float value;
+float kp = 1;
+float ki = 1;
+float kd = 1;
+int desiredRPM = 2500;
+
+static PT_THREAD (protothread_UART(struct pt *pt))
+{
+    PT_BEGIN(pt);  
+    while(1) {
+        //printf('Printing to the terminal /n/r');
+//        PT_SPAWN(pt, &pt_input, PT_GetSerialBuffer(&pt_input));
+//        printf("%s\n\r", PT_term_buffer);
+//        sscanf(PT_term_buffer, "%c %f", &c, &value);
+        printf("hello world");
+        //PT_SPAWN(pt, &pt_input, PutSerialBuffer(&pt_input));
+        PT_YIELD_TIME_msec(30);
+    } // END WHILE(1)
+  PT_END(pt);
+} // UART thread
+
+////This proto-thread checks for the foot pedal to be pressed and sets a flag to
+////play the note corresponding the finger position
+//static PT_THREAD (protothread_footpedal(struct pt *pt))
+//{
+//    PT_BEGIN(pt);
+//      while(1) {
+//        //check every millisecond to play note
+//        PT_YIELD_TIME_msec(10);
+//        //if foot pedal is pressed, set play note to 1
+//        if (1) {
+//            play_note = 1;
+//        }
+//        else {
+//            play_note = 0;
+//        }
+//    }//END WHILE(1)
+//    PT_END(pt);
+//}
 
 //This proto-thread checks the data from the sensors and selects a note to play 
 //depending on which sensors are bent.
@@ -264,7 +288,7 @@ void main(void) {
     //mPORTASetPinsDigitalIn(BIT_0);
     
     // 1 0101 1100 1111
-    mPORTBSetPinsDigitalIn(0x15CF);
+    //mPORTBSetPinsDigitalIn(0x15CF);
 
     // === configure threads ==========
     PT_setup();
@@ -273,24 +297,19 @@ void main(void) {
     //PT_INIT(&pt_note);
     //PT_INIT(&pt_finger_pos);
     //PT_INIT(&pt_footpedal);
+    PT_INIT(&pt_UART);
     
     INTEnableSystemMultiVectoredInt();
     init_notes();
     
-    delay_ms(10);
+    //delay_ms(20);
     
-    int i;
-    
-    for (i = 0; i < sizeof(note_files)/sizeof(note_files[0]); i++) {
-        if (note_files[i].sector != 0) {
-            playSong(note_files[i]);
-        }
-    }
-
-    
-
+//    for (i = 0; i < sizeof(note_files)/sizeof(note_files[0]); i++) {
+//        playSong(note_files[i]);
+//    }
     while (1){
         //PT_SCHEDULE(protothread_note(&pt_note));
+        PT_SCHEDULE(protothread_UART(&pt_UART));
         //PT_SCHEDULE(protothread_finger_pos(&pt_finger_pos));
         //PT_SCHEDULE(protothread_footpedal(&pt_footpedal));
     }

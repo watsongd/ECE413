@@ -3,11 +3,15 @@
     <editor-bookmarks xmlns="http://www.netbeans.org/ns/editor-bookmarks/2" lastBookmarkId="0"/>
     <open-files xmlns="http://www.netbeans.org/ns/projectui-open-files/2">
         <group>
-            <file>file:/C:/Users/nacec/Desktop/ECE413/FinalProject.X/sd.c</file>
-            <file>file:/C:/Users/nacec/Desktop/ECE413/FinalProject.X/structs.h</file>
-            <file>file:/C:/Users/nacec/Desktop/ECE413/FinalProject.X/main.c</file>
-            <file>file:/C:/Users/nacec/Desktop/ECE413/FinalProject.X/sound.c</file>
-            <file>file:/C:/Users/nacec/Desktop/ECE413/FinalProject.X/fat.c</file>
+            <file>file:/C:/Users/watsongd/Desktop/ECE413/FinalProject.X/main.c</file>
+            <file>file:/C:/Users/watsongd/Desktop/ECE413/FinalProject.X/sound.c</file>
+            <file>file:/C:/Users/watsongd/Desktop/ECE413/FinalProject.X/fat.c</file>
+            <file>file:/C:/Program%20Files%20(x86)/Microchip/xc32/v1.42/pic32mx/include/lega-c/proc/p32mx250f128b.h</file>
+            <file>file:/C:/Users/watsongd/Desktop/ECE413/FinalProject.X/pt_cornell_1_2.h</file>
+            <file>file:/C:/Users/watsongd/Desktop/ECE413/FinalProject.X/config.h</file>
+            <file>file:/C:/Users/watsongd/Desktop/ECE413/FinalProject.X/tft_master.c</file>
+            <file>file:/C:/Program%20Files%20(x86)/Microchip/xc32/v1.42/pic32mx/include/lega-c/peripheral/system.h</file>
+            <file>file:/C:/Users/watsongd/Desktop/ECE413/FinalProject.X/sd.c</file>
         </group>
     </open-files>
 </project-private>
