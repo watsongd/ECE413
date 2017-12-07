@@ -92,8 +92,8 @@ int sys_time_seconds;
 void init_notes() {
     initNotes(&temp_note_files);
     int i;
-    int j;
     //Finds notes on SD card and puts them in an array (some blocks aren't songs)
+    //10 is size of temp_note_files, so change range if more notes are added
     for (i=0; i<10; i++) {
         //if cluster == 0, then ignore (not a song)
         if (temp_note_files[i].cluster != 0) {
@@ -116,14 +116,16 @@ static PT_THREAD (protothread_note(struct pt *pt))
         //check every millisecond to play song
         PT_YIELD_TIME_msec(1);
         //if play_note flag is high, play song and then reset the flag
-        if (play_note == 1) {
-            playSong(&selected_note);
-        }
+//        if (play_note == 1) {
+//            playSong(&selected_note);
+//        }
+        playSong(&selected_note);
     }//END WHILE(1)
     PT_END(pt);
 }
 
-//This proto-thread checks for a play_note flag and plays the selected note when high
+//This proto-thread checks for the foot pedal to be pressed and sets a flag to
+//play the note corresponding the finger position
 static PT_THREAD (protothread_footpedal(struct pt *pt))
 {
     PT_BEGIN(pt);
@@ -131,7 +133,7 @@ static PT_THREAD (protothread_footpedal(struct pt *pt))
         //check every millisecond to play note
         PT_YIELD_TIME_msec(10);
         //if foot pedal is pressed, set play note to 1
-        if (footPedalPushed()) {
+        if (1) {
             play_note = 1;
         }
         else {
@@ -151,7 +153,8 @@ static PT_THREAD (protothread_finger_pos(struct pt *pt))
           //
         PT_YIELD_TIME_msec(10);
         int i;
-        uint16_t fingerPos = getFingerPosition();
+        //uint16_t fingerPos = getFingerPosition();
+        uint16_t fingerPos = 0;
         switch (fingerPos) {
             case B1:
                 //Note == B1
@@ -220,26 +223,26 @@ static PT_THREAD (protothread_finger_pos(struct pt *pt))
 }
 //Method for getting finger positions
 //Returns an int with finger positions encoded
-int getFingerPosition(){
-   uint16_t left_thumb   = mPORTBReadBits(BIT_12);
-   uint16_t left_index   = mPORTBReadBits(BIT_10);
-   uint16_t left_middle  = mPORTBReadBits(BIT_8);
-   uint16_t left_ring    = mPORTBReadBits(BIT_7);
-   uint16_t left_pinky   = mPORTBReadBits(BIT_6);
-   
-   uint16_t right_index  = mPORTBReadBits(BIT_0);
-   uint16_t right_middle = mPORTBReadBits(BIT_1);
-   uint16_t right_ring   = mPORTBReadBits(BIT_2);
-   uint16_t right_pinky  = mPORTBReadBits(BIT_3);
-   
-   uint16_t fingerPosition = (left_thumb || left_index || left_middle || left_ring || left_pinky || right_index || right_middle || right_ring || right_pinky);
-   
-   return fingerPosition; 
-}
-
-int footPedalPushed() {
-    return mPORTAReadBits(BIT_0);
-}
+//int getFingerPosition(){
+//   uint16_t left_thumb   = mPORTBReadBits(BIT_12);
+//   uint16_t left_index   = mPORTBReadBits(BIT_10);
+//   uint16_t left_middle  = mPORTBReadBits(BIT_8);
+//   uint16_t left_ring    = mPORTBReadBits(BIT_7);
+//   uint16_t left_pinky   = mPORTBReadBits(BIT_6);
+//   
+//   uint16_t right_index  = mPORTBReadBits(BIT_0);
+//   uint16_t right_middle = mPORTBReadBits(BIT_1);
+//   uint16_t right_ring   = mPORTBReadBits(BIT_2);
+//   uint16_t right_pinky  = mPORTBReadBits(BIT_3);
+//   
+//   uint16_t fingerPosition = (left_thumb || left_index || left_middle || left_ring || left_pinky || right_index || right_middle || right_ring || right_pinky);
+//   
+//   return fingerPosition; 
+//}
+//
+//int footPedalPushed() {
+//    return mPORTBReadBits(BIT_0);
+//}
 /* -----------------------------------------------------------------------------
     Main
    ---------------------------------------------------------------------------*/
@@ -249,15 +252,15 @@ void main(void) {
     ANSELA = 0; ANSELB = 0; CM1CON = 0; CM2CON = 0;
     
     //need to disable pull up / down resistor
-    CNPUA = 0;
-    CNPDA = 0;
-    CNPUB = 0;
-    CNPDB = 0;
-    DisablePullDownA(0);
-    DisablePullDownB(0);
+//    CNPUA = 0;
+//    CNPDA = 0;
+//    CNPUB = 0;
+//    CNPDB = 0;
+//    DisablePullDownA(0);
+//    DisablePullDownB(0);
 
     
-    mPORTACloseBits(BIT_0);
+    //mPORTACloseBits(BIT_0);
     //mPORTASetPinsDigitalIn(BIT_0);
     
     // 1 0101 1100 1111
@@ -267,20 +270,28 @@ void main(void) {
     PT_setup();
 
     // initialize the threads
-    PT_INIT(&pt_note);
+    //PT_INIT(&pt_note);
     //PT_INIT(&pt_finger_pos);
-    PT_INIT(&pt_footpedal);
+    //PT_INIT(&pt_footpedal);
     
     INTEnableSystemMultiVectoredInt();
     init_notes();
     
-    selected_note = note_files[3];
-
     delay_ms(10);
+    
+    int i;
+    
+    for (i = 0; i < sizeof(note_files)/sizeof(note_files[0]); i++) {
+        if (note_files[i].sector != 0) {
+            playSong(note_files[i]);
+        }
+    }
+
+    
 
     while (1){
-        PT_SCHEDULE(protothread_note(&pt_note));
+        //PT_SCHEDULE(protothread_note(&pt_note));
         //PT_SCHEDULE(protothread_finger_pos(&pt_finger_pos));
-        PT_SCHEDULE(protothread_footpedal(&pt_footpedal));
+        //PT_SCHEDULE(protothread_footpedal(&pt_footpedal));
     }
 }
