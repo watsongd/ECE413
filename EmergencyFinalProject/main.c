@@ -21,11 +21,11 @@
 #define DisablePullDownB(bits) CNPDBCLR=bits;
 
 //Notes for a basic scale
-#define G1 0x2C0
-#define A1 0x280
-#define B1 0x200
-#define C1 0x040
-#define D1 0xac7
+#define G1 0x0380
+#define A1 0x0300
+#define B1 0x0200
+#define C1 0x0100
+#define D1 0x1387
 
 //Note Done Yet
 //#define E1 0x1EC
@@ -65,49 +65,63 @@ const short PR = F_CPU/F_dac - 1;
 
 volatile uint32_t accum_amtA, accum_amtB;
 
+char hot_cross_buns[17] = {'B', 'A', 'G', 'B', 'A', 'G', 'B', 'B', 'B', 'B', 'A', 'A', 'A', 'A', 'B', 'A', 'G'};
+int hcb_idx = 0;
+
 // string buffer
 char buffer[60];
+char buffer1[60];
+char buffer2[60];
+char buffer3[60];
+char buffer4[60];
+char buffer5[60];
 
 // === thread structures ============================================
 // thread control structs
 // note that UART input and output are threads
-static struct pt pt_finger_pos, pt_footpedal;
-
-int play_note = 0;
+static struct pt pt_finger_pos, pt_UI;
 
 uint32_t accumA = 0;
 uint32_t accumB = 0;
 uint32_t noteA, noteB;
+int counter = 0;
+int rightNote = 0;
 
-//Note Thread ===================================================
+////Note Thread ===================================================
 static PT_THREAD (protothread_finger_pos(struct pt *pt))
 {
     PT_BEGIN(pt);
     while(1) {
         uint16_t fingerPos = getFingerPosition();
-        uint16_t footpedal = footPedalPushed(); 
+        uint16_t footpedal = footPedalPushed();
+//        noteA = A3;
+//        noteB = A3;
         switch (fingerPos) {
-            case B1:
+            case 519:
                 noteA = B3;
                 noteB = B3;
                 break;
-            case A1:
+            case 263:
                 noteA = A3;
                 noteB = A3;
                 break;
-            case C1:
-                noteA = C3;
-                noteB = C3;
+            case 903:
+                noteA = C4;
+                noteB = C4;
                 break;
-            case G1:
+            case 775:
                 noteA = G3;
                 noteB = G3;
+                break;
+            case 7:
+                noteA = 0;
+                noteB = 0;
                 break;
             case D1:
                 break;  
         }
         
-        if (footpedal == 0x001) {
+        if (footpedal) {
             accum_amtA = noteA;
             accum_amtB = noteB;
         }
@@ -115,50 +129,151 @@ static PT_THREAD (protothread_finger_pos(struct pt *pt))
             accum_amtA = 0;
             accum_amtB = 0;
         }
-        PT_YIELD_TIME_msec(1);
+        PT_YIELD_TIME_msec(10);
         // NEVER exit while
     } // END WHILE(1)
   PT_END(pt);
 } // note thread
 
-//This proto-thread checks for the foot pedal to be pressed and sets a flag to
-//play the note corresponding the finger position
-static PT_THREAD (protothread_footpedal(struct pt *pt))
+// proto-thread for UI setup
+static PT_THREAD (protothread_UI(struct pt *pt))
 {
-    PT_BEGIN(pt);
-      while(1) {
-        //check every millisecond to play note
-        PT_YIELD_TIME_msec(10);
-        //if foot pedal is pressed, set play note to 1
-        uint16_t footpedal = footPedalPushed(); 
-        if (footpedal == 0x001) {
-            play_note = 1;
+    PT_BEGIN(pt);  
+    while(1) {
+        
+        tft_setCursor(170, 120);tft_setTextSize(5);
+        
+//        //erase old text
+        tft_setTextColor(ILI9341_BLACK);
+        tft_writeString(buffer);
+        tft_setCursor(120, 100);
+        tft_writeString(buffer1);
+        tft_setCursor(170, 100);tft_setTextSize(4);
+        tft_writeString(buffer2);
+        tft_setCursor(220, 100);tft_setTextSize(2);
+        tft_writeString(buffer3);
+        tft_setCursor(0, 0);tft_setTextSize(2);
+        tft_writeString(buffer4);
+        tft_setCursor(80, 120);tft_setTextSize(3);
+        tft_writeString(buffer5);
+        
+        if (counter < 10) {
+            tft_setCursor(0, 0);tft_setTextSize(2);
+            tft_setTextColor(ILI9341_WHITE);
+            sprintf(buffer4,"Time For Hot Cross Buns!");
+            tft_writeString(buffer4);
+        }
+        else if (counter > 10 && counter < 15) {
+            tft_setCursor(170, 120);tft_setTextSize(5);
+            tft_setTextColor(ILI9341_WHITE);
+            sprintf(buffer,"3!");
+            tft_writeString(buffer);
+        }
+        else if (counter > 15 && counter < 20) {
+            tft_setCursor(170, 120);tft_setTextSize(5);
+            tft_setTextColor(ILI9341_WHITE);
+            sprintf(buffer,"2!");
+            tft_writeString(buffer);
+        }
+        else if (counter > 20 && counter < 25) {
+            tft_setCursor(170, 120);tft_setTextSize(5);
+            tft_setTextColor(ILI9341_WHITE);
+            sprintf(buffer,"1!");
+            tft_writeString(buffer);
+        }
+        else if (counter > 25 && counter < 30) {
+            tft_setCursor(80, 120);tft_setTextSize(3);
+            tft_setTextColor(ILI9341_WHITE);
+            sprintf(buffer,"Follow Along!");
+            tft_writeString(buffer5);
+        }
+        else if (counter > 30) {
+            if (hcb_idx > 0 && hcb_idx <17) {
+                sprintf(buffer1,"%c", hot_cross_buns[hcb_idx - 1]);
+                sprintf(buffer2,"%c", hot_cross_buns[hcb_idx]);
+                sprintf(buffer3,"%c", hot_cross_buns[hcb_idx + 1]);
+            }
+            else if (hcb_idx == 17) {
+                sprintf(buffer1,"%c", hot_cross_buns[hcb_idx - 1]);
+                sprintf(buffer2,"%c", hot_cross_buns[hcb_idx]);
+            }
+            else if (hcb_idx == 0) {
+                sprintf(buffer2,"%c", hot_cross_buns[hcb_idx]);
+                sprintf(buffer3,"%c", hot_cross_buns[hcb_idx + 1]);
+            }
+            if (counter % 5 == 0) {
+                hcb_idx++;
+            }
+        }
+ 
+        tft_setCursor(120, 100);tft_setTextSize(2);
+        tft_setTextColor(ILI9341_WHITE);
+        tft_writeString(buffer1);
+        
+        tft_setCursor(170, 100);tft_setTextSize(4);
+        if (correctNote(hot_cross_buns[hcb_idx])) {
+            tft_setTextColor(ILI9341_GREEN);
         }
         else {
-            play_note = 0;
+            tft_setTextColor(ILI9341_RED);
         }
-    }//END WHILE(1)
-    PT_END(pt);
-}
+        tft_writeString(buffer2);
+        
+        tft_setCursor(220, 100);tft_setTextSize(2);
+        tft_setTextColor(ILI9341_WHITE);
+        tft_writeString(buffer3);
+        
+        counter = counter + 1;
+        PT_YIELD_TIME_msec(50);
+    } // END WHILE(1)
+  PT_END(pt);
+} // UART thread
 
 int getFingerPosition(){
     uint16_t left_thumb   = mPORTBReadBits(BIT_12);
-    uint16_t left_index   = mPORTBReadBits(BIT_10);
+    uint16_t left_index   = mPORTBReadBits(BIT_9);
     uint16_t left_middle  = mPORTBReadBits(BIT_8);
     uint16_t left_ring    = mPORTBReadBits(BIT_7);
-    uint16_t left_pinky   = mPORTBReadBits(BIT_6);
     
     uint16_t right_index  = mPORTBReadBits(BIT_0);
     uint16_t right_middle = mPORTBReadBits(BIT_1);
     uint16_t right_ring   = mPORTBReadBits(BIT_2);
     uint16_t right_pinky  = mPORTBReadBits(BIT_3);
     
-    uint16_t fingerPosition = (left_thumb || left_index || left_middle || left_ring || left_pinky || right_index || right_middle || right_ring || right_pinky);
+    uint16_t fingerPosition = (left_thumb | left_index | left_middle | left_ring | right_index | right_middle | right_ring | right_pinky);
+    //uint16_t fingerPosition = left_index;
     
     return fingerPosition; 
 }
 int footPedalPushed() {
-    return mPORTAReadBits(BIT_0);
+    return mPORTAReadBits(BIT_1) >> 1;
+}
+
+int correctNote(char *charNote) {
+    if (charNote == 'B') {
+        if (getFingerPosition() == 519) {
+            return 1;
+        }
+        else {
+            return 0;
+        }
+    }
+    else if (charNote == 'A') {
+        if (getFingerPosition() == 263) {
+            return 1;
+        }
+        else {
+            return 0;
+        }
+    }
+    else if (charNote == 'G') {
+        if (getFingerPosition() == 775) {
+            return 1;
+        }
+        else {
+            return 0;
+        }
+    }
 }
 
 void initDAC(void){
@@ -210,13 +325,16 @@ void main(void) {
     SYSTEMConfigPerformance(PBCLK);
     ANSELA = 0; ANSELB = 0; CM1CON = 0; CM2CON = 0;
     //TRISB = 0x4000; //TRISA = 0x0020;
-   
+   mPORTBSetPinsDigitalIn(BIT_12 | BIT_10 | BIT_8 | BIT_7 | BIT_3 | BIT_2 | BIT_1 | BIT_0);
+   mPORTASetPinsDigitalIn(BIT_1);
     // === config threads ==========
     // turns OFF UART support and debugger pin
     PT_setup(); 
   
     //================================================
-   
+    CNPDB = (BIT_12 | BIT_10 | BIT_8 | BIT_7 | BIT_3 | BIT_2 | BIT_1 | BIT_0);
+    //CNPDA = (BIT_0);
+    
     initDAC();
     TRISACLR = 1;
 
@@ -226,16 +344,16 @@ void main(void) {
     //===============================================  
     // init the threads
     PT_INIT(&pt_finger_pos);
-    PT_INIT(&pt_footpedal);
-
-//    // init the display
-//    tft_init_hw();
-//    tft_begin();
-//    tft_fillScreen(ILI9341_BLACK);
-//    //240x320 vertical display
-//    tft_setRotation(3); // Use tft_setRotation(1) for 320x240
-//    
-//    //UI
+    PT_INIT(&pt_UI);
+    
+    // init the display
+    tft_init_hw();
+    tft_begin();
+    tft_fillScreen(ILI9341_BLACK);
+    //240x320 vertical display
+    tft_setRotation(1); // Use tft_setRotation(1) for 320x240
+    
+    //UI
 //    tft_fillRoundRect(0,0, 200, 50, 1, ILI9341_BLACK);// x,y,w,h,radius,color
 //    tft_setCursor(0, 0);
 //    tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
@@ -256,6 +374,7 @@ void main(void) {
     // round-robin scheduler for threads
     while (1){
         PT_SCHEDULE(protothread_finger_pos(&pt_finger_pos));
+        PT_SCHEDULE(protothread_UI(&pt_UI));
     }
   } // main
 // === end  ======================================================

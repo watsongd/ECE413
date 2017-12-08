@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?> 
 <project>                                  
-  <executable name="dist/default/debug/Lab3.X.debug.elf">                 
+  <executable name="dist/default/production/FingerPrintDoor.X.production.elf">                 
     <memory name="program">                 
       <units>bytes</units>                 
       <length>132240</length>                 
-      <used>28914</used>                     
-      <free>103326</free>                     
+      <used>37336</used>                     
+      <free>94904</free>                     
     </memory>                              
     <memory name="data">              
       <units>bytes</units>                 
-      <length>33280</length>                 
-      <used>4204</used>                     
-      <free>29076</free>                     
+      <length>32768</length>                 
+      <used>12016</used>                     
+      <free>20752</free>                     
     </memory>                              
   </executable>                            
 </project>                                 

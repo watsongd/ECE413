@@ -25,10 +25,11 @@
 #include <stdio.h>
 #include "math.h"
 
-//#include "TouchScreen.h"
-//#include "adc_intf.h"
-#include <string.h>
 #include "fat.h"
+#include "TouchScreen.h"
+#include "adc_intf.h"
+#include <string.h>
+
 /*
 
  *
@@ -84,7 +85,7 @@ char feedbackMessage[60];
 
 //song mapping. prob don't need id if using as a key
 
-//struct file allEnrolls[201];
+struct file allEnrolls[201];
 //struct file enrollSong;
 
 /* -----------------------------------------------------------------------------
@@ -116,19 +117,19 @@ typedef struct Enrollment {
    ---------------------------------------------------------------------------*/
 
 //button arrays
-//Button main_menu_buttons[4];
-//Button song_select_buttons_1[30];
-//Button song_select_buttons_2[30];
-//Button song_nav_buttons_1[5];
-//Button song_nav_buttons_2[5];
-//
-////file struct array containing enrolls
-//struct file allEnrolls[201];
-//
-////History struct array for logging doorbell-rings
-//History history_entries[100];
-//
-////music file arrays
+Button main_menu_buttons[4];
+Button song_select_buttons_1[30];
+Button song_select_buttons_2[30];
+Button song_nav_buttons_1[5];
+Button song_nav_buttons_2[5];
+
+//file struct array containing enrolls
+struct file allEnrolls[201];
+
+//History struct array for logging doorbell-rings
+History history_entries[100];
+
+//music file arrays
 struct file music_files[30];
 struct file temp_music_files[30];
 struct file selected_song;
@@ -295,7 +296,7 @@ static PT_THREAD(protothread_song(struct pt *pt)) {
         //if play_song flag is high, play song and then reset the flag
         if (play_song == 1) {
             playSong(&selected_song);
-            play_song = 0;
+            //play_song = 0;
         }
     }//END WHILE(1)
     PT_END(pt);
@@ -424,7 +425,7 @@ void main(void) {
   //PT_INIT(&pt_pushbutton);
   //PT_INIT(&pt_switch);
   //PT_INIT(&pt_led);
-  init_songs();
+
   // init the display
   tft_init_hw();
   tft_begin();
@@ -432,8 +433,8 @@ void main(void) {
   //240x320 vertical display
   tft_setRotation(3); // Use tft_setRotation(1) for 320x240
   tft_setCursor(0, 0);
-  tft_setTextColor(ILI9341_WHITE);  tft_setTextSize(3);
-  tft_writeString("Hello world 7" "\n");
+  tft_setTextColor(ILI9341_WHITE);  tft_setTextSize(1);
+  tft_writeString("Hello world 5" "\n");
   // seed random color
   srand(1);
 

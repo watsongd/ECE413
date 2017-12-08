@@ -53,10 +53,10 @@ void initDAC(void){
     //16 bit mode and no MISO pin
     //SPI at max clk rate. Does not have to be related to sample rate
     //DAC will ignore all bits past 16th bit
-    SpiChnOpen(1, SPI_OPEN_MSTEN | SPI_OPEN_MODE16 | SPI_OPEN_ON |
-            SPI_OPEN_DISSDI | SPI_OPEN_CKE_REV , 2);
+//    SpiChnOpen(1, SPI_OPEN_MSTEN | SPI_OPEN_MODE16 | SPI_OPEN_ON |
+//            SPI_OPEN_DISSDI | SPI_OPEN_CKE_REV , 2);
     
-     PPSOutput(2, RPB5, SDO1);   
+    //PPSOutput(2, RPB5, SDO1);   
          
 }
 
@@ -86,7 +86,7 @@ void initSongs(struct file * musicFiles){
   //DAC spi channel 1
   initDAC();
   //sets SD card in SPI and takes out of idle mode
-  SD_init();
+  //SD_init();
   //scans fat32 boot sector. gets file system parameters,
   //fat table and root locations
   fat32_init();
@@ -266,6 +266,5 @@ void __ISR(_DMA_0_VECTOR, ipl2soft) blockComplete(void){
     INTClearFlag(INT_SOURCE_DMA(DMA_CHANNEL0));
     
 }
-
 
 

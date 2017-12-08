@@ -327,4 +327,3 @@ void endianessSwitch(uint16_t startIndex, uint16_t length, uint8_t * buffer,
         }  
     }
 }
-

@@ -471,7 +471,7 @@ void main(void) {
     tft_setTextColor(ILI9341_WHITE); tft_setTextSize(2);
     tft_writeString("3) Amazing Grace");
     
-    //selection = 3;
+    selection = 3;
     num_notes = 200;
     
     // round-robin scheduler for threads
